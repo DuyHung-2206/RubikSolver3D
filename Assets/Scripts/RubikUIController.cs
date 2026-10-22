@@ -23,13 +23,17 @@ public class RubikUIController : MonoBehaviour
     public Button btnReset;
     public Slider speedSlider;
     public TextMeshProUGUI speedValueText;
+    public Button btnAlgorithm;
+    public Button btnColorPicker;
+    public Button btnCameraScanner;
+    public Button btnSolve;
 
     [Header("Bảng Chiến Thắng (Victory Overlay)")]
     public GameObject victoryPanel;
     public TextMeshProUGUI victoryTimeText;
     public TextMeshProUGUI victoryMovesText;
     public Button btnPlayAgain;
-    public Button btnSolve;
+   
     private int moveCount = 0;
 
     private void Awake()
@@ -54,6 +58,21 @@ public class RubikUIController : MonoBehaviour
         if (btnSolve != null) btnSolve.onClick.AddListener(() => {
             var viewer = FindAnyObjectByType<RubikSolutionViewer>();
             viewer?.StartSolution();
+        });
+
+        if (btnAlgorithm != null) btnAlgorithm.onClick.AddListener(() => {
+            var algInput = FindAnyObjectByType<RubikAlgorithmInput>(FindObjectsInactive.Include);
+            algInput?.TogglePanel();
+        });
+
+        if (btnColorPicker != null) btnColorPicker.onClick.AddListener(() => {
+            var picker = FindAnyObjectByType<RubikNetColorPicker>(FindObjectsInactive.Include);
+            picker?.TogglePanel();
+        });
+
+        if (btnCameraScanner != null) btnCameraScanner.onClick.AddListener(() => {
+            var scanner = FindAnyObjectByType<RubikCameraScanner>(FindObjectsInactive.Include);
+            scanner?.ToggleScanner();
         });
         // Cài đặt thanh trượt tốc độ
         if (speedSlider != null && rotator != null)
@@ -107,6 +126,9 @@ public class RubikUIController : MonoBehaviour
         if (btnRedo != null) btnRedo.interactable = !isBusy;
         if (btnReset != null) btnReset.interactable = !isBusy;
         if (btnSolve != null) btnSolve.interactable = !isBusy;
+        if (btnAlgorithm != null) btnAlgorithm.interactable = !isBusy;
+        if (btnColorPicker != null) btnColorPicker.interactable = !isBusy;
+        if (btnCameraScanner != null) btnCameraScanner.interactable = !isBusy;
         if (speedSlider != null) speedSlider.interactable = !isBusy;
     }
 
@@ -222,6 +244,12 @@ public class RubikUIController : MonoBehaviour
 
         // 5. Nút Chơi Lại trong bảng chiến thắng
         SetFlatColor(btnPlayAgain, new Color(0.06f, 0.72f, 0.51f));
+
+        // 6. Nút Tô màu 2D: Tím Violet hiện đại (#8B5CF6)
+        SetFlatColor(btnColorPicker, new Color(0.55f, 0.36f, 0.96f));
+
+        // 7. Nút Quét Camera: Xanh Cyan công nghệ (#06B6D4)
+        SetFlatColor(btnCameraScanner, new Color(0.02f, 0.71f, 0.83f));
     }
 
     private void SetFlatColor(Button btn, Color baseColor)

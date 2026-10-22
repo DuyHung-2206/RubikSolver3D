@@ -394,4 +394,93 @@ public class RubikRotator : MonoBehaviour
     {
         moveQueue.Clear();
     }
+    /// <summary>
+    /// Xoay tức thì một nước đi trong 1 frame (0 giây), không chờ hoạt ảnh.
+    /// </summary>
+    public void ExecuteMoveInstant(string move)
+    {
+        if (string.IsNullOrEmpty(move)) return;
+        move = move.Trim().ToUpperInvariant();
+
+        char face = move[0];
+        if ("UDRLFB MES".IndexOf(face) < 0) return;
+
+        bool prime = move.Length > 1 && move[1] == '\'';
+        bool doubleTurn = move.EndsWith("2");
+
+        Vector3 axis;
+        float layerCoordinate;
+        float angle;
+
+        switch (face)
+        {
+            case 'R': axis = Vector3.right; layerCoordinate = 1f; angle = 90f; break;
+            case 'L': axis = Vector3.right; layerCoordinate = -1f; angle = -90f; break;
+            case 'U': axis = Vector3.up; layerCoordinate = 1f; angle = 90f; break;
+            case 'D': axis = Vector3.up; layerCoordinate = -1f; angle = -90f; break;
+            case 'F': axis = Vector3.forward; layerCoordinate = 1f; angle = -90f; break;
+            case 'B': axis = Vector3.forward; layerCoordinate = -1f; angle = 90f; break;
+            case 'M': axis = Vector3.right; layerCoordinate = 0f; angle = -90f; break;
+            case 'E': axis = Vector3.up; layerCoordinate = 0f; angle = -90f; break;
+            case 'S': axis = Vector3.forward; layerCoordinate = 0f; angle = -90f; break;
+            default: return;
+        }
+
+        if (doubleTurn) angle *= 2f;
+        else if (prime) angle = -angle;
+
+        if (generator == null) generator = GetComponent<RubikGenerator>();
+        if (generator == null) generator = FindAnyObjectByType<RubikGenerator>();
+        if (generator == null || generator.allCubies == null || generator.allCubies.Count != 27) return;
+
+        float spacing = generator.spacing;
+        float targetCoordinate = layerCoordinate * spacing;
+
+        List<Transform> selected = new List<Transform>();
+        foreach (Transform cubie in generator.allCubies)
+        {
+            if (cubie == null) continue;
+            Vector3 p = cubie.localPosition;
+            float coordinate = (face == 'R' || face == 'L' || face == 'M') ? p.x :
+                               (face == 'U' || face == 'D' || face == 'E') ? p.y : p.z;
+
+            if (Mathf.Abs(coordinate - targetCoordinate) < spacing * 0.25f)
+                selected.Add(cubie);
+        }
+
+        if (selected.Count != 9) return;
+
+        GameObject pivotObject = new GameObject("InstantPivot");
+        Transform pivot = pivotObject.transform;
+        pivot.SetParent(generator.transform, false);
+        pivot.localPosition = Vector3.zero;
+        pivot.localRotation = Quaternion.identity;
+
+        foreach (Transform cubie in selected)
+            cubie.SetParent(pivot, true);
+
+        pivot.localRotation = Quaternion.AngleAxis(angle, axis);
+
+        foreach (Transform cubie in selected)
+        {
+            cubie.SetParent(generator.transform, true);
+            Vector3 p = cubie.localPosition;
+            p.x = Mathf.Round(p.x / spacing) * spacing;
+            p.y = Mathf.Round(p.y / spacing) * spacing;
+            p.z = Mathf.Round(p.z / spacing) * spacing;
+            cubie.localPosition = p;
+            cubie.localRotation = SnapRotation(cubie.localRotation);
+        }
+
+        Destroy(pivotObject);
+
+        // Đồng bộ logic sang StateManager
+        if (stateManager == null)
+            stateManager = FindAnyObjectByType<RubikStateManager>();
+
+        if (stateManager != null)
+        {
+            stateManager.OnMoveCompleted(move);
+        }
+    }
 }
