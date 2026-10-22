@@ -14,12 +14,22 @@ public class RubikRotator : MonoBehaviour
     public AnimationCurve rotationCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
     private RubikGenerator generator;
+    private RubikStateManager stateManager;
     private bool isRotating;
+    public bool IsRotating => isRotating;
     private readonly Queue<string> moveQueue = new Queue<string>();
+
+    /// <summary>
+    /// Cho biết khối Rubik có đang thực hiện xoay hoặc còn lệnh trong hàng đợi hay không.
+    /// </summary>
+    public bool IsBusy => isRotating || (moveQueue != null && moveQueue.Count > 0);
 
     private void Awake()
     {
         generator = GetComponent<RubikGenerator>();
+        stateManager = GetComponent<RubikStateManager>();
+        if (stateManager == null)
+            stateManager = FindAnyObjectByType<RubikStateManager>();
     }
 
     private void Update()
@@ -44,12 +54,18 @@ public class RubikRotator : MonoBehaviour
 
         string suffix = prime ? "'" : "";
 
-        if (Keyboard.current.uKey.wasPressedThisFrame) EnqueueMove("U" + suffix);
-        if (Keyboard.current.dKey.wasPressedThisFrame) EnqueueMove("D" + suffix);
-        if (Keyboard.current.rKey.wasPressedThisFrame) EnqueueMove("R" + suffix);
-        if (Keyboard.current.lKey.wasPressedThisFrame) EnqueueMove("L" + suffix);
-        if (Keyboard.current.fKey.wasPressedThisFrame) EnqueueMove("F" + suffix);
-        if (Keyboard.current.bKey.wasPressedThisFrame) EnqueueMove("B" + suffix);
+        // Ánh xạ phím bấm theo góc nhìn Camera trước khi cho vào hàng đợi xoay
+        if (Keyboard.current.fKey.wasPressedThisFrame) EnqueueMove(MapInputToPhysicalFace('F') + suffix);
+        if (Keyboard.current.bKey.wasPressedThisFrame) EnqueueMove(MapInputToPhysicalFace('B') + suffix);
+        if (Keyboard.current.rKey.wasPressedThisFrame) EnqueueMove(MapInputToPhysicalFace('R') + suffix);
+        if (Keyboard.current.lKey.wasPressedThisFrame) EnqueueMove(MapInputToPhysicalFace('L') + suffix);
+        if (Keyboard.current.uKey.wasPressedThisFrame) EnqueueMove(MapInputToPhysicalFace('U') + suffix);
+        if (Keyboard.current.dKey.wasPressedThisFrame) EnqueueMove(MapInputToPhysicalFace('D') + suffix);
+
+        // Các tầng giữa (Slice moves): M, E, S (nhấn Shift để xoay M', E', S')
+        if (Keyboard.current.mKey.wasPressedThisFrame) EnqueueMove("M" + suffix);
+        if (Keyboard.current.eKey.wasPressedThisFrame) EnqueueMove("E" + suffix);
+        if (Keyboard.current.sKey.wasPressedThisFrame) EnqueueMove("S" + suffix);
     }
 
     public void EnqueueMove(string move)
@@ -60,10 +76,10 @@ public class RubikRotator : MonoBehaviour
         move = move.Trim().ToUpperInvariant();
 
         char face = move[0];
-        if ("UDRLFB".IndexOf(face) < 0)
+        if ("UDRLFB MES".IndexOf(face) < 0)
             return;
 
-        if (move.Length > 1 && move[1] != '\'')
+        if (move.Length > 1 && move[1] != '\'' && move[1] != '2')
             return;
 
         moveQueue.Enqueue(move);
@@ -92,6 +108,7 @@ public class RubikRotator : MonoBehaviour
 
         char face = move[0];
         bool prime = move.Length > 1 && move[1] == '\'';
+        bool isDouble = move.Length > 1 && move[1] == '2';
 
         Vector3 axis;
         float layerCoordinate;
@@ -112,6 +129,12 @@ public class RubikRotator : MonoBehaviour
                 angle = -90f;
                 break;
 
+            case 'M': // Nằm giữa R và L (Tọa độ X = 0, quay theo hướng của L)
+                axis = Vector3.right;
+                layerCoordinate = 0f;
+                angle = -90f;
+                break;
+
             case 'U':
                 axis = Vector3.up;
                 layerCoordinate = 1f;
@@ -121,6 +144,12 @@ public class RubikRotator : MonoBehaviour
             case 'D':
                 axis = Vector3.up;
                 layerCoordinate = -1f;
+                angle = -90f;
+                break;
+
+            case 'E': // Nằm giữa U và D (Tọa độ Y = 0, quay theo hướng của D)
+                axis = Vector3.up;
+                layerCoordinate = 0f;
                 angle = -90f;
                 break;
 
@@ -136,6 +165,12 @@ public class RubikRotator : MonoBehaviour
                 angle = 90f;
                 break;
 
+            case 'S': // Nằm giữa F và B (Tọa độ Z = 0, quay theo hướng của F)
+                axis = Vector3.forward;
+                layerCoordinate = 0f;
+                angle = -90f;
+                break;
+
             default:
                 isRotating = false;
                 yield break;
@@ -143,6 +178,9 @@ public class RubikRotator : MonoBehaviour
 
         if (prime)
             angle = -angle;
+
+        if (isDouble)
+            angle *= 2f;
 
         float spacing = generator.spacing;
         float targetCoordinate = layerCoordinate * spacing;
@@ -157,12 +195,14 @@ public class RubikRotator : MonoBehaviour
             Vector3 p = cubie.localPosition;
             float coordinate;
 
-            if (face == 'R' || face == 'L')
+            if (face == 'R' || face == 'L' || face == 'M')
                 coordinate = p.x;
-            else if (face == 'U' || face == 'D')
+            else if (face == 'U' || face == 'D' || face == 'E')
                 coordinate = p.y;
-            else
+            else if (face == 'F' || face == 'B' || face == 'S')
                 coordinate = p.z;
+            else
+                continue;
 
             if (Mathf.Abs(coordinate - targetCoordinate) < spacing * 0.25f)
                 selected.Add(cubie);
@@ -229,6 +269,12 @@ public class RubikRotator : MonoBehaviour
 
         Destroy(pivotObject);
 
+        // CẬP NHẬT TRẠNG THÁI LOGIC NGAY SAU KHI HOẠT ẢNH 3D KẾT THÚC
+        if (stateManager != null)
+        {
+            stateManager.OnMoveCompleted(move);
+        }
+
         isRotating = false;
     }
 
@@ -253,5 +299,99 @@ public class RubikRotator : MonoBehaviour
             Mathf.Round(direction.y),
             Mathf.Round(direction.z)
         );
+    }
+
+    /// <summary>
+    /// Chuyển đổi ký hiệu phím (U, D, F, B, R, L theo góc nhìn màn hình)
+    /// sang mặt vật lý thực tế của khối Rubik.
+    /// </summary>
+    private char MapInputToPhysicalFace(char inputFace)
+    {
+        Camera cam = Camera.main;
+        if (cam == null) return inputFace;
+
+        // Bỏ qua U và D nếu bạn chỉ muốn xoay 4 hướng ngang
+        if (inputFace == 'U' || inputFace == 'D')
+            return inputFace;
+
+        // Vector hướng nhìn của Camera chiếu phẳng lên mặt đất (mặt phẳng XZ)
+        Vector3 camForward = cam.transform.forward;
+        camForward.y = 0;
+        camForward.Normalize();
+
+        Vector3 camRight = cam.transform.right;
+        camRight.y = 0;
+        camRight.Normalize();
+
+        // 4 hướng mặt ngang cố định của khối Rubik
+        var directions = new Dictionary<char, Vector3>()
+        {
+            { 'F', Vector3.forward }, // +Z: Xanh lá
+            { 'B', Vector3.back },    // -Z: Xanh dương
+            { 'R', Vector3.right },   // +X: Đỏ
+            { 'L', Vector3.left }     // -X: Cam
+        };
+
+        // Tìm mặt nào đang hướng thẳng về phía Camera nhất (chính là F trên màn hình)
+        char currentFront = 'F';
+        float maxDot = -999f;
+        foreach (var pair in directions)
+        {
+            // Vector từ tâm Rubik hướng ra mặt đối đầu với hướng camera (-camForward)
+            float dot = Vector3.Dot(pair.Value, -camForward);
+            if (dot > maxDot)
+            {
+                maxDot = dot;
+                currentFront = pair.Key;
+            }
+        }
+
+        // Tìm mặt bên Phải của góc nhìn camera (R trên màn hình)
+        char currentRight = 'R';
+        maxDot = -999f;
+        foreach (var pair in directions)
+        {
+            float dot = Vector3.Dot(pair.Value, camRight);
+            if (dot > maxDot)
+            {
+                maxDot = dot;
+                currentRight = pair.Key;
+            }
+        }
+
+        // Suy ra mặt Trái và mặt Sau
+        char currentBack = GetOppositeFace(currentFront);
+        char currentLeft = GetOppositeFace(currentRight);
+
+        // Ánh xạ phím người chơi bấm sang mặt vật lý thực tế
+        switch (inputFace)
+        {
+            case 'F': return currentFront;
+            case 'B': return currentBack;
+            case 'R': return currentRight;
+            case 'L': return currentLeft;
+            default: return inputFace;
+        }
+    }
+
+    private char GetOppositeFace(char face)
+    {
+        switch (face)
+        {
+            case 'F': return 'B';
+            case 'B': return 'F';
+            case 'R': return 'L';
+            case 'L': return 'R';
+            case 'U': return 'D';
+            case 'D': return 'U';
+            default: return face;
+        }
+    }
+    /// <summary>
+    /// Xóa sạch các lệnh xoay còn tồn đọng trong hàng đợi khi bấm Reset.
+    /// </summary>
+    public void ClearQueue()
+    {
+        moveQueue.Clear();
     }
 }

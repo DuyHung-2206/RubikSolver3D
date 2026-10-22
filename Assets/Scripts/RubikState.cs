@@ -1,4 +1,3 @@
-
 using System;
 using System.Collections.Generic;
 
@@ -117,7 +116,6 @@ public class RubikState
         return result.ToString();
     }
 
-
     public void ApplyMove(string move)
     {
         if (string.IsNullOrWhiteSpace(move))
@@ -127,8 +125,8 @@ public class RubikState
 
         char face = move[0];
 
-        if ("UDRLFB".IndexOf(face) < 0)
-            throw new System.ArgumentException("Mặt xoay không hợp lệ.");
+        if ("UDRLFB MES".IndexOf(face) < 0)
+            throw new System.ArgumentException($"Mặt xoay '{face}' không hợp lệ.");
 
         int turns = 1;
 
@@ -140,12 +138,21 @@ public class RubikState
             throw new System.ArgumentException("Định dạng nước đi không hợp lệ.");
 
         for (int i = 0; i < turns; i++)
-            RotateFaceClockwise(face);
+        {
+            if (face == 'M')
+                RotateMiddleSliceM();
+            else if (face == 'E')
+                RotateMiddleSliceE();
+            else if (face == 'S')
+                RotateMiddleSliceS();
+            else
+                RotateFaceClockwise(face);
+        }
     }
 
     private void RotateFaceClockwise(char face)
     {
-        // Xoay 9 ô của mặt theo chiều kim đồng hồ.
+        // 1. Xoay 9 ô của chính mặt đó theo chiều kim đồng hồ
         char[] oldFace = GetFace(face);
         char[] newFace = new char[9];
 
@@ -156,9 +163,7 @@ public class RubikState
                 int oldIndex = row * 3 + col;
                 int newRow = col;
                 int newCol = 2 - row;
-                int newIndex = newRow * 3 + newCol;
-
-                newFace[newIndex] = oldFace[oldIndex];
+                newFace[newRow * 3 + newCol] = oldFace[oldIndex];
             }
         }
 
@@ -168,8 +173,220 @@ public class RubikState
                 SetColor(face, row, col, newFace[row * 3 + col]);
         }
 
-        // Lưu ý: đây mới chỉ xoay mặt 3x3.
-        // Chưa hoán đổi các ô ở bốn mặt kề nhau.
+        // 2. Hoán vị 4 dải biên của 4 mặt kề nhau theo quy chuẩn hình học chuẩn WCA
+        RotateAdjacentStrips(face);
+    }
+
+    private void RotateAdjacentStrips(char face)
+    {
+        char[] temp = new char[3];
+
+        switch (face)
+        {
+            case 'U': // Mặt Trên: luân chuyển hàng 0 của B -> R -> F -> L -> B
+                temp[0] = GetColor('B', 0, 0); temp[1] = GetColor('B', 0, 1); temp[2] = GetColor('B', 0, 2);
+
+                SetColor('B', 0, 0, GetColor('L', 0, 0));
+                SetColor('B', 0, 1, GetColor('L', 0, 1));
+                SetColor('B', 0, 2, GetColor('L', 0, 2));
+
+                SetColor('L', 0, 0, GetColor('F', 0, 0));
+                SetColor('L', 0, 1, GetColor('F', 0, 1));
+                SetColor('L', 0, 2, GetColor('F', 0, 2));
+
+                SetColor('F', 0, 0, GetColor('R', 0, 0));
+                SetColor('F', 0, 1, GetColor('R', 0, 1));
+                SetColor('F', 0, 2, GetColor('R', 0, 2));
+
+                SetColor('R', 0, 0, temp[0]);
+                SetColor('R', 0, 1, temp[1]);
+                SetColor('R', 0, 2, temp[2]);
+                break;
+
+            case 'D': // Mặt Dưới: luân chuyển hàng 2 của F -> R -> B -> L -> F
+                temp[0] = GetColor('F', 2, 0); temp[1] = GetColor('F', 2, 1); temp[2] = GetColor('F', 2, 2);
+
+                SetColor('F', 2, 0, GetColor('L', 2, 0));
+                SetColor('F', 2, 1, GetColor('L', 2, 1));
+                SetColor('F', 2, 2, GetColor('L', 2, 2));
+
+                SetColor('L', 2, 0, GetColor('B', 2, 0));
+                SetColor('L', 2, 1, GetColor('B', 2, 1));
+                SetColor('L', 2, 2, GetColor('B', 2, 2));
+
+                SetColor('B', 2, 0, GetColor('R', 2, 0));
+                SetColor('B', 2, 1, GetColor('R', 2, 1));
+                SetColor('B', 2, 2, GetColor('R', 2, 2));
+
+                SetColor('R', 2, 0, temp[0]);
+                SetColor('R', 2, 1, temp[1]);
+                SetColor('R', 2, 2, temp[2]);
+                break;
+
+            case 'R': // Mặt Phải: luân chuyển cột 2 của U, F, D và cột 0 của B (đảo chiều)
+                temp[0] = GetColor('U', 0, 2); temp[1] = GetColor('U', 1, 2); temp[2] = GetColor('U', 2, 2);
+
+                SetColor('U', 0, 2, GetColor('F', 0, 2));
+                SetColor('U', 1, 2, GetColor('F', 1, 2));
+                SetColor('U', 2, 2, GetColor('F', 2, 2));
+
+                SetColor('F', 0, 2, GetColor('D', 0, 2));
+                SetColor('F', 1, 2, GetColor('D', 1, 2));
+                SetColor('F', 2, 2, GetColor('D', 2, 2));
+
+                SetColor('D', 0, 2, GetColor('B', 2, 0));
+                SetColor('D', 1, 2, GetColor('B', 1, 0));
+                SetColor('D', 2, 2, GetColor('B', 0, 0));
+
+                SetColor('B', 2, 0, temp[0]);
+                SetColor('B', 1, 0, temp[1]);
+                SetColor('B', 0, 0, temp[2]);
+                break;
+
+            case 'L': // Mặt Trái: luân chuyển cột 0 của U, B (đảo), D, F
+                temp[0] = GetColor('U', 0, 0); temp[1] = GetColor('U', 1, 0); temp[2] = GetColor('U', 2, 0);
+
+                SetColor('U', 0, 0, GetColor('B', 2, 2));
+                SetColor('U', 1, 0, GetColor('B', 1, 2));
+                SetColor('U', 2, 0, GetColor('B', 0, 2));
+
+                SetColor('B', 2, 2, GetColor('D', 0, 0));
+                SetColor('B', 1, 2, GetColor('D', 1, 0));
+                SetColor('B', 0, 2, GetColor('D', 2, 0));
+
+                SetColor('D', 0, 0, GetColor('F', 0, 0));
+                SetColor('D', 1, 0, GetColor('F', 1, 0));
+                SetColor('D', 2, 0, GetColor('F', 2, 0));
+
+                SetColor('F', 0, 0, temp[0]);
+                SetColor('F', 1, 0, temp[1]);
+                SetColor('F', 2, 0, temp[2]);
+                break;
+
+            case 'F': // Mặt Trước: luân chuyển hàng 2 của U, cột 0 của R, hàng 0 của D, cột 2 của L
+                temp[0] = GetColor('U', 2, 0); temp[1] = GetColor('U', 2, 1); temp[2] = GetColor('U', 2, 2);
+
+                SetColor('U', 2, 0, GetColor('L', 2, 2));
+                SetColor('U', 2, 1, GetColor('L', 1, 2));
+                SetColor('U', 2, 2, GetColor('L', 0, 2));
+
+                SetColor('L', 0, 2, GetColor('D', 0, 0));
+                SetColor('L', 1, 2, GetColor('D', 0, 1));
+                SetColor('L', 2, 2, GetColor('D', 0, 2));
+
+                SetColor('D', 0, 0, GetColor('R', 2, 0));
+                SetColor('D', 0, 1, GetColor('R', 1, 0));
+                SetColor('D', 0, 2, GetColor('R', 0, 0));
+
+                SetColor('R', 0, 0, temp[0]);
+                SetColor('R', 1, 0, temp[1]);
+                SetColor('R', 2, 0, temp[2]);
+                break;
+
+            case 'B': // Mặt Sau: luân chuyển hàng 0 của U, cột 2 của R, hàng 2 của D, cột 0 của L
+                temp[0] = GetColor('U', 0, 0); temp[1] = GetColor('U', 0, 1); temp[2] = GetColor('U', 0, 2);
+
+                SetColor('U', 0, 0, GetColor('R', 0, 2));
+                SetColor('U', 0, 1, GetColor('R', 1, 2));
+                SetColor('U', 0, 2, GetColor('R', 2, 2));
+
+                SetColor('R', 0, 2, GetColor('D', 2, 2));
+                SetColor('R', 1, 2, GetColor('D', 2, 1));
+                SetColor('R', 2, 2, GetColor('D', 2, 0));
+
+                SetColor('D', 2, 0, GetColor('L', 0, 0));
+                SetColor('D', 2, 1, GetColor('L', 1, 0));
+                SetColor('D', 2, 2, GetColor('L', 2, 0));
+
+                SetColor('L', 0, 0, temp[2]);
+                SetColor('L', 1, 0, temp[1]);
+                SetColor('L', 2, 0, temp[0]);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Tầng giữa M (Middle): Nằm giữa L và R, quay theo chiều của L.
+    /// Luân chuyển cột 1 của U, B (đảo), D, F.
+    /// </summary>
+    private void RotateMiddleSliceM()
+    {
+        char[] temp = new char[3];
+        temp[0] = GetColor('U', 0, 1);
+        temp[1] = GetColor('U', 1, 1);
+        temp[2] = GetColor('U', 2, 1);
+
+        SetColor('U', 0, 1, GetColor('B', 2, 1));
+        SetColor('U', 1, 1, GetColor('B', 1, 1));
+        SetColor('U', 2, 1, GetColor('B', 0, 1));
+
+        SetColor('B', 2, 1, GetColor('D', 0, 1));
+        SetColor('B', 1, 1, GetColor('D', 1, 1));
+        SetColor('B', 0, 1, GetColor('D', 2, 1));
+
+        SetColor('D', 0, 1, GetColor('F', 0, 1));
+        SetColor('D', 1, 1, GetColor('F', 1, 1));
+        SetColor('D', 2, 1, GetColor('F', 2, 1));
+
+        SetColor('F', 0, 1, temp[0]);
+        SetColor('F', 1, 1, temp[1]);
+        SetColor('F', 2, 1, temp[2]);
+    }
+
+    /// <summary>
+    /// Tầng giữa E (Equator): Nằm giữa U và D, quay theo chiều của D.
+    /// Luân chuyển hàng 1 của F -> R -> B -> L -> F.
+    /// </summary>
+    private void RotateMiddleSliceE()
+    {
+        char[] temp = new char[3];
+        temp[0] = GetColor('F', 1, 0);
+        temp[1] = GetColor('F', 1, 1);
+        temp[2] = GetColor('F', 1, 2);
+
+        SetColor('F', 1, 0, GetColor('L', 1, 0));
+        SetColor('F', 1, 1, GetColor('L', 1, 1));
+        SetColor('F', 1, 2, GetColor('L', 1, 2));
+
+        SetColor('L', 1, 0, GetColor('B', 1, 0));
+        SetColor('L', 1, 1, GetColor('B', 1, 1));
+        SetColor('L', 1, 2, GetColor('B', 1, 2));
+
+        SetColor('B', 1, 0, GetColor('R', 1, 0));
+        SetColor('B', 1, 1, GetColor('R', 1, 1));
+        SetColor('B', 1, 2, GetColor('R', 1, 2));
+
+        SetColor('R', 1, 0, temp[0]);
+        SetColor('R', 1, 1, temp[1]);
+        SetColor('R', 1, 2, temp[2]);
+    }
+
+    /// <summary>
+    /// Tầng giữa S (Standing): Nằm giữa F và B, quay theo chiều của F.
+    /// Luân chuyển hàng 1 của U, cột 1 của R, hàng 1 của D, cột 1 của L.
+    /// </summary>
+    private void RotateMiddleSliceS()
+    {
+        char[] temp = new char[3];
+        temp[0] = GetColor('U', 1, 0);
+        temp[1] = GetColor('U', 1, 1);
+        temp[2] = GetColor('U', 1, 2);
+
+        SetColor('U', 1, 0, GetColor('L', 2, 1));
+        SetColor('U', 1, 1, GetColor('L', 1, 1));
+        SetColor('U', 1, 2, GetColor('L', 0, 1));
+
+        SetColor('L', 0, 1, GetColor('D', 1, 0));
+        SetColor('L', 1, 1, GetColor('D', 1, 1));
+        SetColor('L', 2, 1, GetColor('D', 1, 2));
+
+        SetColor('D', 1, 0, GetColor('R', 2, 1));
+        SetColor('D', 1, 1, GetColor('R', 1, 1));
+        SetColor('D', 1, 2, GetColor('R', 0, 1));
+
+        SetColor('R', 0, 1, temp[0]);
+        SetColor('R', 1, 1, temp[1]);
+        SetColor('R', 2, 1, temp[2]);
     }
 
     public RubikState Clone()
@@ -222,5 +439,5 @@ public class RubikState
             throw new ArgumentOutOfRangeException(
                 "row/col phải nằm trong khoảng 0 đến 2."
             );
-    }
+        }
 }

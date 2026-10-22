@@ -36,8 +36,8 @@ public class RubikCameraOrbit : MonoBehaviour
     {
         if (target == null || Mouse.current == null) return;
 
-        // Xoay khi giữ chuột trái hoặc chuột phải
-        if (Mouse.current.leftButton.isPressed || Mouse.current.rightButton.isPressed)
+        // CHỈ XOAY CAMERA KHI GIỮ CHUỘT PHẢI (Để dành chuột trái cho việc kéo Rubik)
+        if (Mouse.current.rightButton.isPressed)
         {
             Vector2 delta = Mouse.current.delta.ReadValue();
             x += delta.x * xSpeed * 0.02f;
