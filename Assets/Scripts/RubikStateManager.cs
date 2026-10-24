@@ -41,6 +41,7 @@ public class RubikStateManager : MonoBehaviour
     private void HandleShortcuts()
     {
         if (Keyboard.current == null) return;
+        if (RubikRotator.IsUserTypingInInputField()) return;
 
         bool ctrlPressed = Keyboard.current.leftCtrlKey.isPressed || Keyboard.current.rightCtrlKey.isPressed;
 

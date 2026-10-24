@@ -48,6 +48,10 @@ public class RubikRotator : MonoBehaviour
         if (Keyboard.current == null)
             return;
 
+        // Không nhận phím xoay nếu người dùng đang gõ chữ trong ô nhập công thức (TMP_InputField / InputField)
+        if (IsUserTypingInInputField())
+            return;
+
         bool prime =
             Keyboard.current.leftShiftKey.isPressed ||
             Keyboard.current.rightShiftKey.isPressed;
@@ -66,6 +70,43 @@ public class RubikRotator : MonoBehaviour
         if (Keyboard.current.mKey.wasPressedThisFrame) EnqueueMove("M" + suffix);
         if (Keyboard.current.eKey.wasPressedThisFrame) EnqueueMove("E" + suffix);
         if (Keyboard.current.sKey.wasPressedThisFrame) EnqueueMove("S" + suffix);
+    }
+
+    /// <summary>
+    /// Kiểm tra xem người dùng có đang đặt con trỏ gõ văn bản trong InputField hay không.
+    /// </summary>
+    public static bool IsUserTypingInInputField()
+    {
+        if (UnityEngine.EventSystems.EventSystem.current == null)
+            return false;
+
+        GameObject selected = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject;
+        if (selected == null)
+            return false;
+
+        var tmpInput = selected.GetComponent<TMPro.TMP_InputField>();
+        if (tmpInput != null && tmpInput.isFocused)
+            return true;
+
+        var legacyInput = selected.GetComponent<UnityEngine.UI.InputField>();
+        if (legacyInput != null && legacyInput.isFocused)
+            return true;
+
+        return false;
+    }
+
+    /// <summary>
+    /// Được gọi từ 6 nút bấm giao diện (U, D, F, B, R, L) trên Panel Điều khiển xoay bên phải.
+    /// Tự động kiểm tra phím Shift (hoặc chế độ xoay ngược trên UI) và ánh xạ theo góc nhìn hiện tại.
+    /// </summary>
+    public void RotateFaceFromUI(char inputFace, bool uiPrimeToggle = false)
+    {
+        bool shiftHeld = Keyboard.current != null &&
+                         (Keyboard.current.leftShiftKey.isPressed || Keyboard.current.rightShiftKey.isPressed);
+        bool prime = shiftHeld || uiPrimeToggle;
+        string suffix = prime ? "'" : "";
+        char physicalFace = MapInputToPhysicalFace(char.ToUpperInvariant(inputFace));
+        EnqueueMove(physicalFace + suffix);
     }
 
     public void EnqueueMove(string move)

@@ -37,19 +37,31 @@ public class SpeedcubingTimer : MonoBehaviour
         // Tải kỷ lục cá nhân đã lưu từ trước
         personalBest = PlayerPrefs.GetFloat(PB_KEY, float.MaxValue);
     }
+
     private void OnEnable()
     {
         RubikStateManager.OnRubikSolved += HandleRubikSolved;
     }
+
     private void OnDisable()
     {
         RubikStateManager.OnRubikSolved -= HandleRubikSolved;
     }
+
     public void ResetTimer()
     {
         elapsedTime = 0f;
         currentState = TimerState.Idle;
         isNewRecord = false;
+    }
+
+    public void ClearPersonalBest()
+    {
+        personalBest = float.MaxValue;
+        isNewRecord = false;
+        PlayerPrefs.DeleteKey(PB_KEY);
+        PlayerPrefs.Save();
+        UpdateTMPDisplay();
     }
 
     private void Update()
@@ -68,6 +80,12 @@ public class SpeedcubingTimer : MonoBehaviour
     private void HandleTimerInput()
     {
         if (Keyboard.current == null) return;
+        if (RubikRotator.IsUserTypingInInputField()) return;
+
+        // Không nhận Space của Timer nếu đang mở bảng Quét Camera (vì Space dùng để chụp mặt)
+        var scanner = FindAnyObjectByType<RubikCameraScanner>();
+        if (scanner != null && scanner.scannerPanel != null && scanner.scannerPanel.activeInHierarchy)
+            return;
 
         bool spacePressed = Keyboard.current.spaceKey.isPressed;
         bool spaceReleased = Keyboard.current.spaceKey.wasReleasedThisFrame;
@@ -125,17 +143,6 @@ public class SpeedcubingTimer : MonoBehaviour
         isNewRecord = false;
         currentState = TimerState.Running;
         Debug.Log("<color=yellow>[Timer] BẮT ĐẦU TÍNH GIỜ!</color>");
-    }
-
-    /// <summary>
-    /// Tự động bắt đầu nếu người chơi trực tiếp xoay khối khi đang Idle
-    /// </summary>
-    private void HandlePlayerMove(string move)
-    {
-        if (currentState == TimerState.Idle)
-        {
-            StartTimer();
-        }
     }
 
     /// <summary>
@@ -199,11 +206,11 @@ public class SpeedcubingTimer : MonoBehaviour
     {
         switch (currentState)
         {
-            case TimerState.Holding: return new Color(1f, 0.5f, 0f); // Màu cam
-            case TimerState.Ready: return Color.green;               // Màu xanh lá
-            case TimerState.Running: return Color.white;             // Màu trắng
-            case TimerState.Finished: return isNewRecord ? Color.yellow : Color.cyan;
-            default: return Color.white;
+            case TimerState.Holding: return new Color32(0xEA, 0x58, 0x0C, 255);  // Cam đậm
+            case TimerState.Ready: return new Color32(0x16, 0xA3, 0x4A, 255);    // Xanh lá
+            case TimerState.Running: return new Color32(0x25, 0x63, 0xEB, 255);  // Xanh dương
+            case TimerState.Finished: return isNewRecord ? new Color32(0xD9, 0x77, 0x06, 255) : new Color32(0x0D, 0x94, 0x88, 255);
+            default: return new Color32(0x47, 0x55, 0x69, 255);                  // Xám Slate
         }
     }
 
@@ -211,39 +218,5 @@ public class SpeedcubingTimer : MonoBehaviour
     private void OnGUI()
     {
         if (timerTextTMP != null) return; // Nếu đã có TMP UI thì không vẽ OnGUI
-
-        GUIStyle style = new GUIStyle(GUI.skin.label)
-        {
-            alignment = TextAnchor.UpperCenter,
-            fontSize = 42,
-            fontStyle = FontStyle.Bold
-        };
-        style.normal.textColor = GetStateColor();
-
-        float screenWidth = Screen.width;
-        // Hiển thị đồng hồ to ở chính giữa phía trên
-        GUI.Label(new Rect(0, 20, screenWidth, 60), FormatTime(elapsedTime), style);
-
-        // Hiển thị hướng dẫn & PB ở dưới đồng hồ
-        GUIStyle subStyle = new GUIStyle(GUI.skin.label)
-        {
-            alignment = TextAnchor.UpperCenter,
-            fontSize = 18,
-            fontStyle = FontStyle.Normal
-        };
-        subStyle.normal.textColor = new Color(0.9f, 0.9f, 0.9f, 0.8f);
-
-        string statusPrompt = "";
-        switch (currentState)
-        {
-            case TimerState.Idle: statusPrompt = "Giữ [SPACE] để chuẩn bị | Vuốt xoay để bắt đầu"; break;
-            case TimerState.Holding: statusPrompt = "Giữ nguyên..."; break;
-            case TimerState.Ready: statusPrompt = "SẴN SÀNG! Nhả [SPACE] để tính giờ"; break;
-            case TimerState.Running: statusPrompt = "Đang giải... Bấm [SPACE] để dừng khẩn cấp"; break;
-            case TimerState.Finished: statusPrompt = isNewRecord ? "🏆 KỶ LỤC MỚI ĐƯỢC THIẾT LẬP!" : "Hoàn thành! Giữ [SPACE] để chơi ván mới"; break;
-        }
-
-        string pbText = personalBest < float.MaxValue ? $"Kỷ lục cá nhân (PB): {FormatTime(personalBest)}" : "Chưa có kỷ lục";
-        GUI.Label(new Rect(0, 80, screenWidth, 30), $"{statusPrompt}  |  {pbText}", subStyle);
     }
 }

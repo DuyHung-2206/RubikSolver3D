@@ -26,28 +26,50 @@ public class RubikDragController : MonoBehaviour
 
     private void Update()
     {
-        if (Mouse.current == null || rotator == null) return;
+        if (rotator == null) return;
         // KHÓA KÉO THẢ NẾU KHỐI RUBIK ĐANG BẬN XOAY HOẶC ĐANG TRỘN
         if (rotator.IsBusy)
         {
             isDragging = false;
             return;
         }
-        // 1. Nhấn chuột trái: Bắn Raycast xác định mặt và viên Rubik
-        if (Mouse.current.leftButton.wasPressedThisFrame)
-            if (Mouse.current == null || rotator == null) return;
+        // 1. Nhấn chuột trái hoặc chạm 1 ngón tay: Bắn Raycast xác định mặt và viên Rubik
+        bool pointerDown = false;
+        bool pointerHeld = false;
+        bool pointerUp = false;
+        Vector2 pointerPos = Vector2.zero;
 
-        // Nếu khối đang xoay hoạt ảnh thì không nhận tương tác kéo mới
-        if (rotator.IsRotating)
+        if (Mouse.current != null)
         {
-            isDragging = false;
-            return;
+            pointerDown = Mouse.current.leftButton.wasPressedThisFrame;
+            pointerHeld = Mouse.current.leftButton.isPressed;
+            pointerUp = Mouse.current.leftButton.wasReleasedThisFrame;
+            pointerPos = Mouse.current.position.ReadValue();
         }
 
-        // 1. Nhấn chuột trái: Bắn Raycast xác định mặt và viên Rubik
-        if (Mouse.current.leftButton.wasPressedThisFrame)
+        if (!pointerDown && !pointerHeld && !pointerUp && Touchscreen.current != null && Touchscreen.current.touches.Count == 1)
         {
-            Ray ray = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+            var touch = Touchscreen.current.primaryTouch;
+            pointerDown = touch.press.wasPressedThisFrame;
+            pointerHeld = touch.press.isPressed;
+            pointerUp = touch.press.wasReleasedThisFrame;
+            pointerPos = touch.position.ReadValue();
+        }
+
+        if (pointerDown)
+        {
+            // Bỏ qua nếu nhấp chuột trên các nút hoặc bảng giao diện UI
+            if (UnityEngine.EventSystems.EventSystem.current != null &&
+                UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
+            {
+                isDragging = false;
+                return;
+            }
+
+            if (mainCamera == null) mainCamera = Camera.main;
+            if (mainCamera == null) return;
+
+            Ray ray = mainCamera.ScreenPointToRay(pointerPos);
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
                 // Chỉ nhận các khối con thuộc RubikManager
@@ -55,17 +77,16 @@ public class RubikDragController : MonoBehaviour
                 {
                     clickedCubie = hit.transform;
                     hitNormal = hit.normal;
-                    dragStartPos = Mouse.current.position.ReadValue();
+                    dragStartPos = pointerPos;
                     isDragging = true;
                 }
             }
         }
 
-        // 2. Đang giữ chuột: Kiểm tra xem đã kéo đủ khoảng cách threshold chưa
-        if (isDragging && Mouse.current.leftButton.isPressed)
+        // 2. Đang giữ chuột/ngón tay: Kiểm tra xem đã kéo đủ khoảng cách threshold chưa
+        if (isDragging && pointerHeld)
         {
-            Vector2 currentMousePos = Mouse.current.position.ReadValue();
-            Vector2 dragDelta = currentMousePos - dragStartPos;
+            Vector2 dragDelta = pointerPos - dragStartPos;
 
             if (dragDelta.magnitude >= dragThreshold)
             {
@@ -74,8 +95,8 @@ public class RubikDragController : MonoBehaviour
             }
         }
 
-        // 3. Nhả chuột: Hủy cờ kéo nếu chưa đủ threshold
-        if (Mouse.current.leftButton.wasReleasedThisFrame)
+        // 3. Nhả chuột/ngón tay: Hủy cờ kéo nếu chưa đủ threshold
+        if (pointerUp)
         {
             isDragging = false;
         }
