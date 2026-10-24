@@ -6,6 +6,8 @@ public class RubikSolver : MonoBehaviour
 {
     private RubikStateManager stateManager;
 
+    public string LastErrorMessage { get; private set; } = string.Empty;
+
     private void Awake()
     {
         stateManager = GetComponent<RubikStateManager>();
@@ -30,6 +32,14 @@ public class RubikSolver : MonoBehaviour
         char colorD = state.GetColor('D', 1, 1);
         char colorL = state.GetColor('L', 1, 1);
         char colorB = state.GetColor('B', 1, 1);
+
+        char[] centers = { colorU, colorR, colorF, colorD, colorL, colorB };
+        HashSet<char> centerSet = new HashSet<char>(centers);
+        if (centerSet.Count != 6)
+        {
+            LastErrorMessage = "6 tâm mặt không đủ 6 màu khác nhau. Vui lòng kiểm tra lại màu các mặt.";
+            return string.Empty;
+        }
 
         Dictionary<char, char> colorToFace = new Dictionary<char, char>()
         {
@@ -72,6 +82,7 @@ public class RubikSolver : MonoBehaviour
         if (stateManager != null && stateManager.IsSolved())
         {
             Debug.Log("[RubikSolver] Khối Rubik đã ở trạng thái giải hoàn chỉnh!");
+            LastErrorMessage = string.Empty;
             return new List<string>();
         }
 
@@ -80,10 +91,9 @@ public class RubikSolver : MonoBehaviour
 
     private List<string> SolveFromHistoryOrAlgorithm()
     {
-        string cubeDef = GetCubeDefinitionString();
-        Debug.Log($"[RubikSolver] Trạng thái 54 facelets: {cubeDef}");
+        LastErrorMessage = string.Empty;
 
-        // 1. Lấy lịch sử nước đi từ StateManager (LIFO: index 0 là nước đi gần đây nhất)
+        // 1. Lấy lịch sử nước đi từ StateManager (nếu người dùng tự xoay trên 3D)
         List<string> history = null;
         if (stateManager != null)
         {
@@ -117,20 +127,134 @@ public class RubikSolver : MonoBehaviour
             }
         }
 
-        // 2. Nếu không có lịch sử hoặc lịch sử không khớp, thử giải bằng BFS tìm kiếm ngắn hạn
+        // 2. Thử giải nhanh bằng BFS với độ sâu <= 3
         if (stateManager != null && stateManager.CurrentState != null)
         {
-            var bfsSolution = SolveByBFS(stateManager.CurrentState, 4);
-            if (bfsSolution != null && bfsSolution.Count > 0)
+            var bfsSolution = SolveByBFS(stateManager.CurrentState, 3);
+            if (bfsSolution != null && bfsSolution.Count > 0 && VerifySolution(bfsSolution))
             {
                 Debug.Log($"<color=green>[RubikSolver] Giải thành công bằng thuật toán BFS ({bfsSolution.Count} bước): {string.Join(" ", bfsSolution)}</color>");
                 return bfsSolution;
             }
         }
 
-        // 3. Dự phòng chuỗi giải mẫu nếu không giải được
-        Debug.LogWarning("[RubikSolver] Không tìm thấy chuỗi giải phù hợp. Sử dụng công thức dự phòng.");
-        return GenerateFallbackSolution();
+        // 3. Giải trạng thái bất kỳ (từ Camera Scanner hoặc Net Color Picker) bằng thuật toán Kociemba Two-Phase
+        string cubeDef = GetCubeDefinitionString();
+        Debug.Log($"[RubikSolver] Chuỗi 54 facelets Kociemba: {cubeDef}");
+
+        if (string.IsNullOrEmpty(cubeDef) || cubeDef.Length != 54 || cubeDef.Contains("?"))
+        {
+            if (string.IsNullOrEmpty(LastErrorMessage))
+                LastErrorMessage = "Không thể tạo chuỗi định nghĩa Rubik: các mặt bị thiếu ô hoặc trùng màu tâm.";
+            Debug.LogError($"[RubikSolver] {LastErrorMessage}");
+            return new List<string>();
+        }
+
+        // Kiểm tra tính hợp lệ vật lý trước khi giải
+        int verifyResult = Kociemba.Tools.verify(cubeDef);
+        if (verifyResult != 0)
+        {
+            LastErrorMessage = GetVerifyErrorMessage(verifyResult);
+            Debug.LogError($"[RubikSolver] Khối Rubik không hợp lệ: {LastErrorMessage}");
+            return new List<string>();
+        }
+
+        try
+        {
+            string info;
+            string solutionResult = Kociemba.SearchRunTime.solution(cubeDef, out info, maxDepth: 22, timeOut: 6000);
+
+            if (string.IsNullOrEmpty(solutionResult))
+            {
+                Debug.Log("[RubikSolver] Khối Rubik đã được giải hoàn tất.");
+                return new List<string>();
+            }
+
+            if (solutionResult.StartsWith("Error"))
+            {
+                LastErrorMessage = GetSearchErrorMessage(solutionResult);
+                Debug.LogError($"[RubikSolver] Thuật toán Kociemba báo lỗi: {LastErrorMessage}");
+                return new List<string>();
+            }
+
+            string[] tokens = solutionResult.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            List<string> kociembaMoves = new List<string>();
+            foreach (var token in tokens)
+            {
+                string t = token.Trim();
+                if (t == "." || string.IsNullOrEmpty(t)) continue;
+                kociembaMoves.Add(t);
+            }
+
+            List<string> optimizedKociemba = SimplifyMoves(kociembaMoves);
+            if (VerifySolution(optimizedKociemba))
+            {
+                Debug.Log($"<color=green>[RubikSolver] Kociemba giải thành công ({optimizedKociemba.Count} bước tối ưu): {string.Join(" ", optimizedKociemba)}</color>");
+                return optimizedKociemba;
+            }
+
+            if (VerifySolution(kociembaMoves))
+            {
+                Debug.Log($"<color=green>[RubikSolver] Kociemba giải thành công ({kociembaMoves.Count} bước): {string.Join(" ", kociembaMoves)}</color>");
+                return kociembaMoves;
+            }
+
+            Debug.LogWarning("[RubikSolver] Chuỗi giải Kociemba không vượt qua bước kiểm tra mô phỏng.");
+            LastErrorMessage = "Chuỗi nước đi tìm được không đưa được khối Rubik về trạng thái hoàn chỉnh.";
+            return new List<string>();
+        }
+        catch (Exception ex)
+        {
+            LastErrorMessage = $"Lỗi khi thực thi thuật toán giải: {ex.Message}";
+            Debug.LogError($"[RubikSolver] Ngoại lệ Kociemba: {ex}");
+            return new List<string>();
+        }
+    }
+
+    private string GetVerifyErrorMessage(int code)
+    {
+        switch (code)
+        {
+            case -1:
+                return "Số lượng màu không hợp lệ: Mỗi màu phải có đúng 9 ô.";
+            case -2:
+                return "Lỗi cạnh: Không đủ 12 viên cạnh độc nhất (có thể do quét sai màu ô cạnh).";
+            case -3:
+                return "Lỗi lật cạnh (Flip error): Có viên cạnh bị lật ngược bất thường.";
+            case -4:
+                return "Lỗi góc: Không đủ 8 viên góc độc nhất (có thể do quét sai màu ô góc).";
+            case -5:
+                return "Lỗi xoay góc (Twist error): Có viên góc bị xoay lệch hướng.";
+            case -6:
+                return "Lỗi hoán vị (Parity error): Hai viên bị tráo đổi vị trí không thể giải bằng các phép quay thông thường.";
+            default:
+                return $"Trạng thái khối Rubik không hợp lệ (Mã kiểm tra: {code}).";
+        }
+    }
+
+    private string GetSearchErrorMessage(string errorStr)
+    {
+        switch (errorStr.Trim())
+        {
+            case "Error 1":
+                return "Số lượng màu không hợp lệ: Mỗi màu phải có đúng 9 ô.";
+            case "Error 2":
+                return "Lỗi cạnh: Không đủ 12 viên cạnh hợp lệ.";
+            case "Error 3":
+                return "Lỗi lật cạnh (Flip error): Một cạnh bị lật ngược.";
+            case "Error 4":
+                return "Lỗi góc: Không đủ 8 viên góc hợp lệ.";
+            case "Error 5":
+                return "Lỗi xoay góc (Twist error): Một góc bị xoay lệch.";
+            case "Error 6":
+                return "Lỗi hoán vị (Parity error): Cần tráo đổi 2 góc hoặc 2 cạnh.";
+            case "Error 7":
+                return "Không tìm thấy lời giải trong giới hạn bước đi cho phép.";
+            case "Error 8":
+                return "Hết thời gian tìm kiếm lời giải (Timeout).";
+            default:
+                return $"Lỗi thuật toán giải: {errorStr}";
+        }
     }
 
     /// <summary>
@@ -320,10 +444,5 @@ public class RubikSolver : MonoBehaviour
             this.state = state;
             this.moves = moves;
         }
-    }
-
-    private List<string> GenerateFallbackSolution()
-    {
-        return new List<string> { "R", "U", "R'", "U'", "F'", "U", "F" };
     }
 }

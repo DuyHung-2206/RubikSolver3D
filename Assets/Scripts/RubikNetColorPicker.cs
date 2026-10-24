@@ -439,13 +439,13 @@ public class RubikNetColorPicker : MonoBehaviour
             int y = Mathf.RoundToInt(cubie.localPosition.y / spacing);
             int z = Mathf.RoundToInt(cubie.localPosition.z / spacing);
 
-            // Cập nhật từng mặt của Cubie
-            if (y == 1) ApplyStickerColor(cubie, "Sticker_Up", state.GetColor('U', z + 1, x + 1));
-            if (y == -1) ApplyStickerColor(cubie, "Sticker_Down", state.GetColor('D', 1 - z, x + 1));
-            if (z == 1) ApplyStickerColor(cubie, "Sticker_Front", state.GetColor('F', 1 - y, x + 1));
-            if (z == -1) ApplyStickerColor(cubie, "Sticker_Back", state.GetColor('B', 1 - y, 1 - x));
-            if (x == 1) ApplyStickerColor(cubie, "Sticker_Right", state.GetColor('R', 1 - y, 1 - z));
-            if (x == -1) ApplyStickerColor(cubie, "Sticker_Left", state.GetColor('L', 1 - y, z + 1));
+            // Cập nhật từng mặt của Cubie (Chuẩn hệ tọa độ 3D đồng nhất với sơ đồ 2D: U=+Y, D=-Y, F=-Z, B=+Z, R=+X, L=-X)
+            if (y == 1) ApplyStickerColor(cubie, "Sticker_Up", state.GetColor('U', 1 - z, x + 1));
+            if (y == -1) ApplyStickerColor(cubie, "Sticker_Down", state.GetColor('D', z + 1, x + 1));
+            if (z == -1) ApplyStickerColor(cubie, "Sticker_Front", state.GetColor('F', 1 - y, x + 1));
+            if (z == 1) ApplyStickerColor(cubie, "Sticker_Back", state.GetColor('B', 1 - y, 1 - x));
+            if (x == 1) ApplyStickerColor(cubie, "Sticker_Right", state.GetColor('R', 1 - y, z + 1));
+            if (x == -1) ApplyStickerColor(cubie, "Sticker_Left", state.GetColor('L', 1 - y, 1 - z));
         }
     }
 

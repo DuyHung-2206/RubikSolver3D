@@ -59,11 +59,16 @@ public class RubikState
 
     public bool IsSolved()
     {
+        HashSet<char> centers = new HashSet<char>();
         for (int f = 0; f < FaceCount; f++)
         {
+            char centerColor = faces[f][4];
+            if (!centers.Add(centerColor))
+                return false;
+
             for (int i = 0; i < FaceSize; i++)
             {
-                if (faces[f][i] != SolvedColors[f])
+                if (faces[f][i] != centerColor)
                     return false;
             }
         }

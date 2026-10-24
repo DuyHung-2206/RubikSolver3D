@@ -104,7 +104,7 @@ public class RubikDragController : MonoBehaviour
             axis1 = Vector3.right;   // Trục X (ngang)
             axis2 = Vector3.forward; // Trục Z (dọc)
         }
-        else if (Mathf.Abs(localNormal.z) > 0.5f) // Mặt F (+Z) hoặc B (-Z)
+        else if (Mathf.Abs(localNormal.z) > 0.5f) // Mặt F (-Z) hoặc B (+Z)
         {
             axis1 = Vector3.right; // Trục X (ngang)
             axis2 = Vector3.up;    // Trục Y (dọc)
@@ -171,12 +171,12 @@ public class RubikDragController : MonoBehaviour
             // Tầng giữa M (Middle)
             return isClockwise ? "M'" : "M";
         }
-        // 3. Xoay quanh trục Z (Các tầng dọc theo chiều Z: F, S, B)
+        // 3. Xoay quanh trục Z (Các tầng dọc theo chiều Z: F tại z=-1, S tại z=0, B tại z=+1)
         else if (Mathf.Abs(rotAxis.z) > 0.5f)
         {
             bool isClockwise = rotAxis.z < 0;
-            if (pos.z > 0.4f) return isClockwise ? "F" : "F'";
-            if (pos.z < -0.4f) return isClockwise ? "B'" : "B";
+            if (pos.z < -0.4f) return isClockwise ? "F" : "F'";
+            if (pos.z > 0.4f) return isClockwise ? "B'" : "B";
             // Tầng giữa S (Standing)
             return isClockwise ? "S" : "S'";
         }

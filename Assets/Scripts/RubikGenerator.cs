@@ -10,8 +10,8 @@ public class RubikGenerator : MonoBehaviour
     [Header("Materials màu sắc (Để trống sẽ tự tạo màu)")]
     public Material matWhite;  // Up (+Y)
     public Material matYellow; // Down (-Y)
-    public Material matGreen;  // Front (+Z)
-    public Material matBlue;   // Back (-Z)
+    public Material matGreen;  // Front (-Z)
+    public Material matBlue;   // Back (+Z)
     public Material matRed;    // Right (+X)
     public Material matOrange; // Left (-X)
     public Material matBlack;  // Lõi đen
@@ -69,14 +69,31 @@ public class RubikGenerator : MonoBehaviour
 
     void InitDefaultMaterials()
     {
-        // Màu chuẩn thi đấu Rubik thực tế
-        matWhite = CreateColorMaterial(new Color(0.96f, 0.96f, 0.96f), 0.5f);
-        matYellow = CreateColorMaterial(new Color(1.0f, 0.84f, 0.0f), 0.5f);
-        matGreen = CreateColorMaterial(new Color(0.0f, 0.62f, 0.28f), 0.5f);
-        matBlue = CreateColorMaterial(new Color(0.0f, 0.32f, 0.73f), 0.5f);
-        matRed = CreateColorMaterial(new Color(0.77f, 0.12f, 0.15f), 0.5f);
-        matOrange = CreateColorMaterial(new Color(1.0f, 0.36f, 0.0f), 0.5f);
-        matBlack = CreateColorMaterial(new Color(0.1f, 0.1f, 0.1f), 0.3f);
+        // Đồng bộ 100% mã màu với bảng màu 2D (RubikNetColorPicker.DisplayColors)
+        matWhite = CreateStickerMaterial(new Color(0.96f, 0.96f, 0.96f));  // Trắng
+        matYellow = CreateStickerMaterial(new Color(1.00f, 0.84f, 0.00f)); // Vàng
+        matGreen = CreateStickerMaterial(new Color(0.00f, 0.65f, 0.28f));  // Xanh lá
+        matBlue = CreateStickerMaterial(new Color(0.00f, 0.35f, 0.85f));   // Xanh dương
+        matRed = CreateStickerMaterial(new Color(0.85f, 0.12f, 0.15f));    // Đỏ
+        matOrange = CreateStickerMaterial(new Color(1.00f, 0.40f, 0.00f)); // Cam
+        matBlack = CreateColorMaterial(new Color(0.10f, 0.10f, 0.12f), 0.3f); // Lõi đen
+    }
+
+    Material CreateStickerMaterial(Color color)
+    {
+        // Dùng Unlit cho nhãn dán 3D để màu sắc luôn tươi sáng, đồng nhất tuyệt đối với bảng màu 2D ở mọi góc nhìn
+        Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
+        if (shader == null) shader = Shader.Find("Unlit/Color");
+        if (shader == null) shader = Shader.Find("Universal Render Pipeline/Lit");
+        if (shader == null) shader = Shader.Find("Standard");
+
+        Material mat = new Material(shader);
+        mat.color = color;
+        if (mat.HasProperty("_BaseColor"))
+            mat.SetColor("_BaseColor", color);
+        if (mat.HasProperty("_Color"))
+            mat.SetColor("_Color", color);
+        return mat;
     }
 
     Material CreateColorMaterial(Color color, float smoothness = 0.5f)
@@ -136,13 +153,16 @@ public class RubikGenerator : MonoBehaviour
             AttachSticker(parentCubie, Vector3.down * stickerOffset,
                 Quaternion.Euler(-90, 0, 0), matYellow, "Sticker_Down");
 
-        if (z == 1)
-            AttachSticker(parentCubie, Vector3.forward * stickerOffset,
-                Quaternion.Euler(0, 180, 0), matGreen, "Sticker_Front");
-
+        // Trong hệ tọa độ Left-Handed của Unity:
+        // Nhìn từ phía trước vào khối Rubik (Up = +Y, Right = +X, Left = -X):
+        // Mặt Trước (Front - Xanh lá) nằm ở -Z (Vector3.back), Mặt Sau (Back - Xanh dương) nằm ở +Z (Vector3.forward).
         if (z == -1)
             AttachSticker(parentCubie, Vector3.back * stickerOffset,
-                Quaternion.identity, matBlue, "Sticker_Back");
+                Quaternion.identity, matGreen, "Sticker_Front");
+
+        if (z == 1)
+            AttachSticker(parentCubie, Vector3.forward * stickerOffset,
+                Quaternion.Euler(0, 180, 0), matBlue, "Sticker_Back");
 
         if (x == 1)
             AttachSticker(parentCubie, Vector3.right * stickerOffset,

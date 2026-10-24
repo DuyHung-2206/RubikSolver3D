@@ -105,15 +105,21 @@ public class RubikCameraScanner : MonoBehaviour
     // Bảng màu RGB trung bình thực tế được lấy mẫu từ 6 tâm mặt (Auto-Calibrate)
     private readonly Dictionary<char, Color> calibratedColors = new Dictionary<char, Color>();
 
-    // Bảng màu chuẩn WCA mặc định để nhận diện
+    // Bộ đệm tái sử dụng chống Garbage Collection cho hàm lấy mẫu Trimmed Mean
+    private Color[] kernelColorBuffer = new Color[256];
+    private float[] kernelLuminanceBuffer = new float[256];
+    private int[] kernelIndexBuffer = new int[256];
+
+    // Bảng màu chuẩn WCA mặc định để nhận diện (Đồng bộ 100% với RubikNetColorPicker.DisplayColors và RubikGenerator)
     private static readonly Dictionary<char, Color> WcaReferenceColors = new Dictionary<char, Color>()
     {
-        { 'W', new Color(0.95f, 0.95f, 0.95f) }, // Trắng
-        { 'Y', new Color(1.00f, 0.85f, 0.05f) }, // Vàng
-        { 'G', new Color(0.05f, 0.65f, 0.25f) }, // Xanh lá
-        { 'B', new Color(0.05f, 0.35f, 0.85f) }, // Xanh dương
+        { 'W', new Color(0.96f, 0.96f, 0.96f) }, // Trắng
+        { 'Y', new Color(1.00f, 0.84f, 0.00f) }, // Vàng
+        { 'G', new Color(0.00f, 0.65f, 0.28f) }, // Xanh lá
+        { 'B', new Color(0.00f, 0.35f, 0.85f) }, // Xanh dương
         { 'R', new Color(0.85f, 0.12f, 0.15f) }, // Đỏ
-        { 'O', new Color(1.00f, 0.45f, 0.05f) }  // Cam
+        { 'O', new Color(1.00f, 0.40f, 0.00f) }, // Cam
+        { '?', new Color(0.28f, 0.32f, 0.40f) }  // Mẫu chưa rõ / Cảnh báo
     };
 
     // UI elements lưu trữ nội bộ
@@ -633,20 +639,35 @@ public class RubikCameraScanner : MonoBehaviour
     }
 
     /// <summary>
-    /// Lấy mẫu pixel với thuật toán Trimmed Mean (lọc bỏ 20% pixel tối nhất do rãnh đen
-    /// và 15% pixel sáng nhất do lóa đèn trần) để nhận diện màu nhãn dán cực kỳ tinh khiết.
+    /// Lấy mẫu pixel với thuật toán Trimmed Mean tái sử dụng bộ đệm (Zero GC Allocation),
+    /// loại bỏ 20% pixel tối nhất do rãnh đen và 15% pixel sáng nhất do lóa đèn trần.
     /// </summary>
     private Color SamplePixelKernelTrimmed(int cx, int cy, int kernelSize)
     {
         int half = kernelSize / 2;
-        List<Color> rawPixels = new List<Color>(kernelSize * kernelSize);
+        int totalPixels = kernelSize * kernelSize;
+
+        if (kernelColorBuffer == null || kernelColorBuffer.Length < totalPixels)
+        {
+            kernelColorBuffer = new Color[totalPixels];
+            kernelLuminanceBuffer = new float[totalPixels];
+            kernelIndexBuffer = new int[totalPixels];
+        }
+
+        int collectedCount = 0;
 
         if (webCamTexture != null && webCamTexture.isPlaying)
         {
-            int startX = Mathf.Clamp(cx - half, 0, webCamTexture.width - kernelSize);
-            int startY = Mathf.Clamp(cy - half, 0, webCamTexture.height - kernelSize);
+            int startX = Mathf.Clamp(cx - half, 0, Mathf.Max(0, webCamTexture.width - kernelSize));
+            int startY = Mathf.Clamp(cy - half, 0, Mathf.Max(0, webCamTexture.height - kernelSize));
             Color[] pixels = webCamTexture.GetPixels(startX, startY, kernelSize, kernelSize);
-            rawPixels.AddRange(pixels);
+            collectedCount = Mathf.Min(pixels.Length, totalPixels);
+            for (int i = 0; i < collectedCount; i++)
+            {
+                kernelColorBuffer[i] = pixels[i];
+                kernelLuminanceBuffer[i] = 0.299f * pixels[i].r + 0.587f * pixels[i].g + 0.114f * pixels[i].b;
+                kernelIndexBuffer[i] = i;
+            }
         }
         else if (mockCameraTexture != null)
         {
@@ -654,51 +675,58 @@ public class RubikCameraScanner : MonoBehaviour
             {
                 for (int x = -half; x <= half; x++)
                 {
+                    if (collectedCount >= totalPixels) break;
                     int px = Mathf.Clamp(cx + x, 0, mockCameraTexture.width - 1);
                     int py = Mathf.Clamp(cy + y, 0, mockCameraTexture.height - 1);
-                    rawPixels.Add(mockCameraTexture.GetPixel(px, py));
+                    Color col = mockCameraTexture.GetPixel(px, py);
+                    kernelColorBuffer[collectedCount] = col;
+                    kernelLuminanceBuffer[collectedCount] = 0.299f * col.r + 0.587f * col.g + 0.114f * col.b;
+                    kernelIndexBuffer[collectedCount] = collectedCount;
+                    collectedCount++;
                 }
             }
         }
 
-        if (rawPixels.Count == 0) return Color.white;
+        if (collectedCount == 0) return Color.black;
 
-        // Sắp xếp các điểm ảnh theo độ sáng (Luminance)
-        rawPixels.Sort((a, b) => {
-            float lumA = 0.299f * a.r + 0.587f * a.g + 0.114f * a.b;
-            float lumB = 0.299f * b.r + 0.587f * b.g + 0.114f * b.b;
-            return lumA.CompareTo(lumB);
-        });
+        // Sắp xếp các chỉ số theo độ sáng in-place (Không phát sinh rác GC)
+        System.Array.Sort(kernelLuminanceBuffer, kernelIndexBuffer, 0, collectedCount);
 
-        // Bỏ qua 20% pixel tối nhất (viền đen / khe hở giữa các cubie)
-        // và 15% pixel sáng nhất (vết phản quang bóng nhẫy / lóa đèn)
-        int trimLow = Mathf.RoundToInt(rawPixels.Count * 0.20f);
-        int trimHigh = Mathf.RoundToInt(rawPixels.Count * 0.15f);
+        // Bỏ qua 20% pixel tối nhất (viền đen / rãnh cubie) và 15% pixel sáng nhất (vết phản quang bóng nhẫy / lóa đèn)
+        int trimLow = Mathf.RoundToInt(collectedCount * 0.20f);
+        int trimHigh = Mathf.RoundToInt(collectedCount * 0.15f);
 
         float r = 0f, g = 0f, b = 0f;
         int validCount = 0;
 
-        for (int i = trimLow; i < rawPixels.Count - trimHigh; i++)
+        for (int i = trimLow; i < collectedCount - trimHigh; i++)
         {
-            r += rawPixels[i].r;
-            g += rawPixels[i].g;
-            b += rawPixels[i].b;
+            int origIdx = kernelIndexBuffer[i];
+            r += kernelColorBuffer[origIdx].r;
+            g += kernelColorBuffer[origIdx].g;
+            b += kernelColorBuffer[origIdx].b;
             validCount++;
         }
 
-        if (validCount == 0) return rawPixels[rawPixels.Count / 2];
+        if (validCount == 0) return kernelColorBuffer[kernelIndexBuffer[collectedCount / 2]];
 
         return new Color(r / validCount, g / validCount, b / validCount);
     }
 
     /// <summary>
-    /// Phân loại màu nâng cao kết hợp Normalized Chromaticity (rg-chromaticity),
-    /// không gian HSV và khoảng cách cảm nhận mắt người, kháng lóa và ánh sáng phòng yếu.
+    /// Phân loại màu chuẩn xác cao kết hợp Normalized Chromaticity, không gian HSV,
+    /// bảo vệ nghiêm ngặt chống gán nhầm sang White, và nhận diện độ tin cậy để trả về '?' khi không rõ.
     /// </summary>
     private char ClassifyColor(Color c)
     {
         float total = c.r + c.g + c.b;
-        if (total < 0.05f) return 'W'; // Quá tối
+
+        // 0. Kiểm tra mẫu quá tối / bóng đen / khe rãnh nhựa:
+        // Tuyệt đối không bao giờ mặc định mẫu tối thành White! Trả về '?' để yêu cầu chỉnh góc ngắm/ánh sáng.
+        if (total < 0.16f || (c.r < 0.08f && c.g < 0.08f && c.b < 0.08f))
+        {
+            return '?';
+        }
 
         float nr = c.r / total;
         float ng = c.g / total;
@@ -707,11 +735,18 @@ public class RubikCameraScanner : MonoBehaviour
         Color.RGBToHSV(c, out float h, out float s, out float v);
         float hueDeg = h * 360f;
 
-        // Nếu đã có dữ liệu hiệu chuẩn từ 6 tâm mặt (Auto-Calibrate)
-        bool useCalibrated = (toggleAutoCalibrate == null || toggleAutoCalibrate.isOn) && calibratedColors.Count >= 4;
+        // Vùng tối mờ / xám mù do thiếu sáng hoặc bóng đổ
+        if (v < 0.22f && s < 0.22f)
+        {
+            return '?';
+        }
+
+        // 1. Kiểm tra bộ hiệu chuẩn động (Auto-Calibrate):
+        // Chỉ kích hoạt khi đã thu thập đủ trọn vẹn 6 tâm mặt W, Y, G, B, R, O
+        bool useCalibrated = (toggleAutoCalibrate == null || toggleAutoCalibrate.isOn) && calibratedColors.Count == 6;
         if (useCalibrated)
         {
-            char bestMatch = 'W';
+            char bestMatch = '?';
             float minDistance = float.MaxValue;
 
             foreach (var pair in calibratedColors)
@@ -727,12 +762,10 @@ public class RubikCameraScanner : MonoBehaviour
                 Color.RGBToHSV(calCol, out float ch, out float cs, out float cv);
                 float chueDeg = ch * 360f;
 
-                // Khoảng cách trong không gian Chromaticity + sai lệch Hue
                 float dChrom = Mathf.Sqrt(Mathf.Pow(nr - cnr, 2) + Mathf.Pow(ng - cng, 2) + Mathf.Pow(nb - cnb, 2));
                 float dHue = Mathf.Min(Mathf.Abs(hueDeg - chueDeg), 360f - Mathf.Abs(hueDeg - chueDeg)) / 180f;
 
                 float dist = dChrom * 2.0f + dHue;
-
                 if (dist < minDistance)
                 {
                     minDistance = dist;
@@ -740,66 +773,73 @@ public class RubikCameraScanner : MonoBehaviour
                 }
             }
 
-            return bestMatch;
+            // Chỉ dùng kết quả hiệu chuẩn nếu khoảng cách đủ gần (ngưỡng tin cậy cao)
+            if (minDistance < 0.38f && bestMatch != '?')
+            {
+                return bestMatch;
+            }
+            // Nếu không đủ tin cậy, tiếp tục rơi xuống bộ phân loại quang phổ rule-based bên dưới
         }
 
-        // 1. Phân biệt màu Trắng (White):
-        // Màu trắng có 3 kênh R, G, B tương đối cân bằng và độ bão hòa thấp.
-        // BẢO VỆ TUYỆT ĐỐI: Không bao giờ nhận diện nhầm các màu Đỏ/Hồng/Cam hoặc Xanh thành Trắng!
-        bool isWhite = false;
-        bool hasColorImbalance = (c.r > c.g * 1.35f) || (c.b > c.g * 1.40f) || (c.g > c.r * 1.35f) || (c.g > c.b * 1.40f);
-
+        // 2. Phân biệt màu Trắng (White):
+        // Màu trắng có độ sáng cao (V >= 0.42), độ bão hòa thấp (S <= 0.22), và 3 kênh R,G,B cân bằng.
+        // Khóa bảo vệ nghiêm ngặt: Nếu có bất kỳ kênh nào vượt trội, TUYỆT ĐỐI không phải Trắng.
+        bool hasColorImbalance = (c.r > c.g * 1.30f) || (c.b > c.g * 1.35f) || (c.g > c.r * 1.30f) || (c.g > c.b * 1.35f);
         if (!hasColorImbalance)
         {
-            if (s < 0.22f && v > 0.35f)
+            if (v >= 0.48f && s <= 0.22f)
             {
-                isWhite = true;
+                return 'W';
             }
-            else if (s < 0.30f && Mathf.Abs(c.r - c.g) < 0.12f && Mathf.Abs(c.g - c.b) < 0.12f)
+            if (v >= 0.40f && s <= 0.15f && Mathf.Abs(c.r - c.g) < 0.10f && Mathf.Abs(c.g - c.b) < 0.10f)
             {
-                isWhite = true;
+                return 'W';
             }
         }
 
-        if (isWhite) return 'W';
-
-        // 2. Màu Xanh Dương (Blue):
-        if ((hueDeg >= 165f && hueDeg <= 275f) || (c.b > 0.35f && c.b > c.r * 1.15f && c.b > c.g * 1.10f))
+        // 3. Màu Xanh Dương (Blue):
+        // Kênh Blue chiếm ưu thế rõ rệt
+        if ((hueDeg >= 165f && hueDeg <= 275f && s >= 0.20f) || (c.b > 0.32f && c.b > c.r * 1.15f && c.b > c.g * 1.10f))
         {
             return 'B';
         }
 
-        // 3. Màu Xanh Lá (Green):
-        if ((hueDeg >= 72f && hueDeg < 165f) || (c.g > 0.35f && c.g > c.r * 1.15f && c.g > c.b * 1.15f))
+        // 4. Màu Xanh Lá (Green):
+        // Kênh Green chiếm ưu thế rõ rệt
+        if ((hueDeg >= 72f && hueDeg < 165f && s >= 0.20f) || (c.g > 0.32f && c.g > c.r * 1.15f && c.g > c.b * 1.12f))
         {
             return 'G';
         }
 
-        // 4. Màu Vàng (Yellow):
-        // Hue nằm trong dải vàng [38° .. 75°] và tỷ lệ Green so với Red cao
+        // 5. Màu Vàng (Yellow):
+        // Cả Red và Green đều cao, Green chiếm tỷ lệ lớn (G/R >= 0.58), Blue thấp (B < G * 0.78), Hue trong [38°..75°]
         float grRatio = (c.r > 0.001f) ? (c.g / c.r) : 0f;
-        if ((hueDeg >= 38f && hueDeg < 75f && grRatio >= 0.58f) || (grRatio >= 0.75f && hueDeg >= 30f))
+        if (s >= 0.24f && c.b < c.g * 0.78f)
         {
-            return 'Y';
+            if (hueDeg >= 38f && hueDeg < 75f && grRatio >= 0.58f)
+            {
+                return 'Y';
+            }
+            if (grRatio >= 0.72f && hueDeg >= 30f)
+            {
+                return 'Y';
+            }
         }
 
-        // 5. Phân biệt chính xác giữa Hồng / Đỏ San Hô (Pink / Coral Red) vs Cam (Orange) vs Đỏ Cờ (Classic Red):
-        // BẢN CHẤT QUANG HỌC:
-        // - Hồng / Đỏ san hô (Stickerless Red): Chứa thành phần Blue rõ rệt (B > G hoặc B xấp xỉ G với Hue ngả tím hồng [310°..360°]).
-        // - Cam (Orange): Chứa thành phần Green rõ rệt hơn Blue (G > B * 1.05) với Hue nằm trong dải cam [6°..38°].
-        // - Đỏ Cờ (Classic Red): Red áp đảo tuyệt đối, cả Green và Blue đều rất thấp.
-
-        // A. Hồng / Đỏ san hô (Stickerless Red):
-        if ((hueDeg >= 310f || hueDeg <= 5f) && (c.b >= c.g * 0.96f))
+        // 6. Phân biệt Hồng / Đỏ San Hô (Stickerless Red) vs Cam (Orange) vs Đỏ Cờ (Classic Red):
+        // A) Hồng / Đỏ San Hô (Stickerless Red):
+        // Đặc điểm: Blue cao rõ rệt so với Green (B >= G * 0.96 và R > G * 1.20), Hue trong dải tím hồng [305°..360°] hoặc [0°..5°]
+        if ((hueDeg >= 305f || hueDeg <= 5f) && (c.b >= c.g * 0.96f) && (c.r > c.g * 1.20f))
         {
             return 'R';
         }
-        if (c.b >= c.g * 1.02f && c.r > c.g * 1.25f)
+        if (c.b >= c.g * 1.02f && c.r > c.g * 1.20f)
         {
-            return 'R'; // Rõ ràng là Hồng / Đỏ San Hô
+            return 'R'; // Hồng / Đỏ San Hô
         }
 
-        // B. Màu Cam (Orange):
+        // B) Cam (Orange):
+        // Đặc điểm: Green cao hơn Blue rõ rệt (G >= B * 1.05), Red lớn hơn Green, Hue trong [6°..38°]
         if (c.g > c.b * 1.05f && c.r > c.g && (hueDeg >= 6f && hueDeg < 38f))
         {
             return 'O';
@@ -809,14 +849,22 @@ public class RubikCameraScanner : MonoBehaviour
             return 'O';
         }
 
-        // C. Đỏ Cờ đậm (Classic Red):
-        if (c.r > c.g * 1.5f && c.r > c.b * 1.5f)
+        // C) Đỏ Cờ đậm (Classic Red):
+        // Red áp đảo cả Green và Blue (R > 1.5G và R > 1.5B), Hue sát 0°
+        if (c.r > c.g * 1.50f && c.r > c.b * 1.50f && (hueDeg >= 345f || hueDeg <= 12f))
         {
             return 'R';
         }
 
-        // Fallback an toàn: nếu Green vượt trội Blue thì là Cam, ngược lại là Đỏ
-        return (c.g > c.b) ? 'O' : 'R';
+        // 7. Dự phòng có căn cứ (Heuristic Fallback cho gam màu ấm):
+        if (c.r > c.g && c.r > c.b && s >= 0.30f)
+        {
+            if (c.g > c.b * 1.08f) return 'O';
+            if (c.b > c.g * 0.95f) return 'R';
+        }
+
+        // Không chắc chắn: Tuyệt đối không ép thành màu trắng! Trả về '?' để cảnh báo người dùng
+        return '?';
     }
 
     // =========================================================================
@@ -827,6 +875,7 @@ public class RubikCameraScanner : MonoBehaviour
     {
         char currentFace = FaceOrder[currentFaceIndex];
         char[] faceData = new char[9];
+        bool hasUnknownCell = false;
 
         for (int r = 0; r < 3; r++)
         {
@@ -837,17 +886,22 @@ public class RubikCameraScanner : MonoBehaviour
                 int sourceCol = flipHorizontal ? (2 - c) : c;
                 int sourceIdx = sourceRow * 3 + sourceCol;
 
-                faceData[targetIdx] = liveDetectedColors[sourceIdx];
+                char detected = liveDetectedColors[sourceIdx];
+                faceData[targetIdx] = detected;
+                if (detected == '?') hasUnknownCell = true;
             }
         }
 
         // Không bắt buộc màu tâm: nhận diện trực tiếp màu thực tế tại ô tâm (ô thứ 4)
         char centerColor = faceData[4];
 
-        // Auto-Calibrate: Cập nhật màu thực tế của tâm mặt này làm mốc so sánh
+        // Auto-Calibrate: Chỉ lưu mẫu tâm vào bộ hiệu chuẩn khi màu tâm rõ ràng và hợp lệ
         if (toggleAutoCalibrate == null || toggleAutoCalibrate.isOn)
         {
-            calibratedColors[centerColor] = liveSampledColors[4];
+            if (IsValidWcaColor(centerColor))
+            {
+                calibratedColors[centerColor] = liveSampledColors[4];
+            }
         }
 
         scannedFaces[currentFace] = faceData;
@@ -856,7 +910,14 @@ public class RubikCameraScanner : MonoBehaviour
         UpdatePreviewUIFromStored();
         UpdateFaceBadgesUI();
 
-        SetStatus($"Đã lưu mặt {currentFace}! ({completedFaces.Count}/6 mặt đã xong)", Color.green);
+        if (hasUnknownCell)
+        {
+            SetStatus($"Đã lưu mặt {currentFace}, nhưng có ô chưa rõ màu (?). Hãy nhấp vào ô trên lưới xem trước để sửa màu thủ công!", Color.yellow);
+        }
+        else
+        {
+            SetStatus($"Đã lưu mặt {currentFace}! ({completedFaces.Count}/6 mặt đã xong)", Color.green);
+        }
 
         // Tự động chuyển sang mặt tiếp theo nếu còn mặt chưa quét
         if (completedFaces.Count < 6)
@@ -865,7 +926,7 @@ public class RubikCameraScanner : MonoBehaviour
         }
         else
         {
-            SetStatus("Tuyệt vời! Đã quét đủ 6 mặt. Hãy kiểm tra lại và bấm 'Đồng bộ lên khối 3D'.", Color.cyan);
+            SetStatus("Tuyệt vời! Đã quét đủ 6 mặt. Hãy kiểm tra các ô trên lưới xem trước và bấm 'Đồng bộ lên khối 3D'.", Color.cyan);
         }
     }
 
@@ -935,7 +996,8 @@ public class RubikCameraScanner : MonoBehaviour
             {
                 if (previewCellImages[i] != null)
                 {
-                    previewCellImages[i].color = WcaReferenceColors[colors[i]];
+                    char col = colors[i];
+                    previewCellImages[i].color = WcaReferenceColors.ContainsKey(col) ? WcaReferenceColors[col] : Color.gray;
                 }
             }
         }
@@ -953,16 +1015,38 @@ public class RubikCameraScanner : MonoBehaviour
             return;
         }
 
-        // Kiểm tra số lượng mỗi màu phải đúng 9 ô
-        Dictionary<char, int> counts = new Dictionary<char, int>();
-        foreach (char c in DefaultCenterColors) counts[c] = 0;
+        // 1. Kiểm tra không còn ô nào chưa rõ màu ('?')
+        foreach (var pair in scannedFaces)
+        {
+            for (int i = 0; i < 9; i++)
+            {
+                if (pair.Value[i] == '?')
+                {
+                    SetStatus($"Mặt {pair.Key} còn ô thứ {i + 1} chưa rõ màu (?). Vui lòng nhấp vào ô đó trên bảng xem trước để chọn màu chuẩn!", Color.red);
+                    return;
+                }
+            }
+        }
+
+        // 2. Kiểm tra số lượng mỗi màu phải đúng 9 ô
+        Dictionary<char, int> counts = new Dictionary<char, int>()
+        {
+            { 'W', 0 }, { 'Y', 0 }, { 'G', 0 }, { 'B', 0 }, { 'R', 0 }, { 'O', 0 }
+        };
 
         foreach (var pair in scannedFaces)
         {
             foreach (char color in pair.Value)
             {
                 if (counts.ContainsKey(color))
+                {
                     counts[color]++;
+                }
+                else
+                {
+                    SetStatus($"Phát hiện ô màu không hợp lệ '{color}'. Hãy nhấp vào ô để sửa!", Color.red);
+                    return;
+                }
             }
         }
 
@@ -970,15 +1054,35 @@ public class RubikCameraScanner : MonoBehaviour
         {
             if (pair.Value != 9)
             {
-                SetStatus($"Sai lệch số màu: Màu '{pair.Key}' có {pair.Value}/9 ô. Nhấp vào ô màu trên bảng để chỉnh sửa thủ công!", Color.red);
+                SetStatus($"Sai lệch số màu: Màu '{pair.Key}' có {pair.Value}/9 ô (cần đúng 9). Hãy nhấp vào các ô xem trước để chỉnh sửa!", Color.red);
                 return;
             }
         }
 
-        // 1. Reset mô hình 3D về trạng thái gốc
+        // 3. Kiểm tra tính duy nhất của 6 màu tâm (không được trùng tâm giữa các mặt)
+        HashSet<char> centerColors = new HashSet<char>();
+        foreach (var pair in scannedFaces)
+        {
+            char center = pair.Value[4];
+            if (centerColors.Contains(center))
+            {
+                SetStatus($"Lỗi cấu trúc: Có 2 mặt bị trùng cùng màu tâm '{center}'. Vui lòng quét lại mặt bị trùng!", Color.red);
+                return;
+            }
+            centerColors.Add(center);
+        }
+
+        // 4. Kiểm tra tính hợp lệ vật lý của 12 viên cạnh (Parity Check)
+        if (!ValidatePhysicalEdges(out string edgeError))
+        {
+            SetStatus($"Lỗi vật lý Rubik: {edgeError}. Hãy nhấp vào các ô xem trước để sửa lại!", Color.red);
+            return;
+        }
+
+        // 5. Reset mô hình 3D về trạng thái gốc
         if (stateManager != null) stateManager.ResetAll();
 
-        // 2. Cập nhật dữ liệu logic RubikState
+        // 6. Cập nhật dữ liệu logic RubikState
         RubikState state = stateManager.CurrentState;
         foreach (var pair in scannedFaces)
         {
@@ -992,12 +1096,63 @@ public class RubikCameraScanner : MonoBehaviour
             }
         }
 
-        // 3. Custom Material Sync: Tạo và đồng bộ chất liệu màu thực tế
-        bool useCustomMaterials = (toggleCustomMaterialSync == null || toggleCustomMaterialSync.isOn);
+        // 7. Đồng bộ chất liệu màu chuẩn WCA (đồng nhất 100% giữa bảng 2D và mô hình 3D)
+        bool useCustomMaterials = (toggleCustomMaterialSync != null && toggleCustomMaterialSync.isOn);
         Update3DStickersWithMaterials(state, useCustomMaterials);
 
-        SetStatus("✔ Đã đồng bộ màu từ Camera lên khối Rubik 3D thành công!", Color.green);
+        SetStatus("✔ Đã đồng bộ màu từ Camera lên khối Rubik 3D thành công 100%!", Color.green);
         CloseScanner();
+    }
+
+    private bool IsValidWcaColor(char c)
+    {
+        return c == 'W' || c == 'Y' || c == 'G' || c == 'B' || c == 'R' || c == 'O';
+    }
+
+    private bool ValidatePhysicalEdges(out string error)
+    {
+        error = "";
+        // Danh sách 12 viên cạnh chuẩn (Face1, Index1, Face2, Index2)
+        (char, int, char, int)[] edges = new (char, int, char, int)[]
+        {
+            ('U', 7, 'F', 1), ('U', 3, 'L', 1), ('U', 1, 'B', 1), ('U', 5, 'R', 1),
+            ('D', 1, 'F', 7), ('D', 3, 'L', 7), ('D', 7, 'B', 7), ('D', 5, 'R', 7),
+            ('F', 3, 'L', 5), ('F', 5, 'R', 3), ('B', 5, 'L', 3), ('B', 3, 'R', 5)
+        };
+
+        char centerF = scannedFaces.ContainsKey('F') ? scannedFaces['F'][4] : 'G';
+        char centerB = scannedFaces.ContainsKey('B') ? scannedFaces['B'][4] : 'B';
+        char centerR = scannedFaces.ContainsKey('R') ? scannedFaces['R'][4] : 'R';
+        char centerL = scannedFaces.ContainsKey('L') ? scannedFaces['L'][4] : 'O';
+        char centerU = scannedFaces.ContainsKey('U') ? scannedFaces['U'][4] : 'W';
+        char centerD = scannedFaces.ContainsKey('D') ? scannedFaces['D'][4] : 'Y';
+
+        foreach (var e in edges)
+        {
+            if (!scannedFaces.ContainsKey(e.Item1) || !scannedFaces.ContainsKey(e.Item3)) continue;
+
+            char c1 = scannedFaces[e.Item1][e.Item2];
+            char c2 = scannedFaces[e.Item3][e.Item4];
+
+            if (c1 == c2)
+            {
+                error = $"Viên cạnh ({e.Item1}-{e.Item3}) có 2 nhãn dán cùng màu '{c1}'";
+                return false;
+            }
+
+            // Kiểm tra 2 màu trên cùng viên cạnh có thuộc cặp tâm đối diện không
+            bool isOpposite = (c1 == centerF && c2 == centerB) || (c1 == centerB && c2 == centerF)
+                           || (c1 == centerR && c2 == centerL) || (c1 == centerL && c2 == centerR)
+                           || (c1 == centerU && c2 == centerD) || (c1 == centerD && c2 == centerU);
+
+            if (isOpposite)
+            {
+                error = $"Viên cạnh ({e.Item1}-{e.Item3}) chứa 2 màu tâm đối diện ({c1}-{c2})";
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private void Update3DStickersWithMaterials(RubikState state, bool useCustomSync)
@@ -1034,12 +1189,13 @@ public class RubikCameraScanner : MonoBehaviour
             int y = Mathf.RoundToInt(cubie.localPosition.y / spacing);
             int z = Mathf.RoundToInt(cubie.localPosition.z / spacing);
 
-            if (y == 1) ApplySticker(cubie, "Sticker_Up", activeMats[state.GetColor('U', z + 1, x + 1)]);
-            if (y == -1) ApplySticker(cubie, "Sticker_Down", activeMats[state.GetColor('D', 1 - z, x + 1)]);
-            if (z == 1) ApplySticker(cubie, "Sticker_Front", activeMats[state.GetColor('F', 1 - y, x + 1)]);
-            if (z == -1) ApplySticker(cubie, "Sticker_Back", activeMats[state.GetColor('B', 1 - y, 1 - x)]);
-            if (x == 1) ApplySticker(cubie, "Sticker_Right", activeMats[state.GetColor('R', 1 - y, 1 - z)]);
-            if (x == -1) ApplySticker(cubie, "Sticker_Left", activeMats[state.GetColor('L', 1 - y, z + 1)]);
+            // Cập nhật từng mặt của Cubie (Chuẩn hệ tọa độ 3D đồng nhất với sơ đồ 2D: U=+Y, D=-Y, F=-Z, B=+Z, R=+X, L=-X)
+            if (y == 1) ApplySticker(cubie, "Sticker_Up", activeMats[state.GetColor('U', 1 - z, x + 1)]);
+            if (y == -1) ApplySticker(cubie, "Sticker_Down", activeMats[state.GetColor('D', z + 1, x + 1)]);
+            if (z == -1) ApplySticker(cubie, "Sticker_Front", activeMats[state.GetColor('F', 1 - y, x + 1)]);
+            if (z == 1) ApplySticker(cubie, "Sticker_Back", activeMats[state.GetColor('B', 1 - y, 1 - x)]);
+            if (x == 1) ApplySticker(cubie, "Sticker_Right", activeMats[state.GetColor('R', 1 - y, z + 1)]);
+            if (x == -1) ApplySticker(cubie, "Sticker_Left", activeMats[state.GetColor('L', 1 - y, 1 - z)]);
         }
     }
 
@@ -1120,7 +1276,17 @@ public class RubikCameraScanner : MonoBehaviour
         if (!scannedFaces.ContainsKey(currentFace))
         {
             scannedFaces[currentFace] = new char[9];
-            for (int i = 0; i < 9; i++) scannedFaces[currentFace][i] = liveDetectedColors[i];
+            for (int r = 0; r < 3; r++)
+            {
+                for (int c = 0; c < 3; c++)
+                {
+                    int previewIdx = r * 3 + c;
+                    int sourceRow = flipVertical ? (2 - r) : r;
+                    int sourceCol = flipHorizontal ? (2 - c) : c;
+                    int sourceIdx = sourceRow * 3 + sourceCol;
+                    scannedFaces[currentFace][previewIdx] = liveDetectedColors[sourceIdx];
+                }
+            }
             completedFaces.Add(currentFace);
         }
 
@@ -1129,7 +1295,7 @@ public class RubikCameraScanner : MonoBehaviour
         scannedFaces[currentFace][index] = nextColor;
 
         if (previewCellImages[index] != null)
-            previewCellImages[index].color = WcaReferenceColors[nextColor];
+            previewCellImages[index].color = WcaReferenceColors.ContainsKey(nextColor) ? WcaReferenceColors[nextColor] : Color.white;
 
         UpdateFaceBadgesUI();
         SetStatus($"Đã chỉnh ô {index + 1} sang màu '{nextColor}'", Color.white);

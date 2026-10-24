@@ -115,6 +115,7 @@ public class RubikRotator : MonoBehaviour
         float angle;
 
         // Chiều xoay theo ký hiệu Rubik chuẩn (Clockwise theo góc nhìn trực diện từng mặt)
+        // Hệ tọa độ Left-Handed của Unity (U=+Y, D=-Y, F=-Z, B=+Z, R=+X, L=-X)
         switch (face)
         {
             case 'R':
@@ -155,13 +156,13 @@ public class RubikRotator : MonoBehaviour
 
             case 'F':
                 axis = Vector3.forward;
-                layerCoordinate = 1f;
+                layerCoordinate = -1f;
                 angle = -90f;
                 break;
 
             case 'B':
                 axis = Vector3.forward;
-                layerCoordinate = -1f;
+                layerCoordinate = 1f;
                 angle = 90f;
                 break;
 
@@ -323,13 +324,13 @@ public class RubikRotator : MonoBehaviour
         camRight.y = 0;
         camRight.Normalize();
 
-        // 4 hướng mặt ngang cố định của khối Rubik
+        // 4 hướng mặt ngang cố định của khối Rubik (U=+Y, D=-Y, F=-Z, B=+Z, R=+X, L=-X)
         var directions = new Dictionary<char, Vector3>()
         {
-            { 'F', Vector3.forward }, // +Z: Xanh lá
-            { 'B', Vector3.back },    // -Z: Xanh dương
-            { 'R', Vector3.right },   // +X: Đỏ
-            { 'L', Vector3.left }     // -X: Cam
+            { 'F', Vector3.back },    // -Z: Xanh lá (Front)
+            { 'B', Vector3.forward }, // +Z: Xanh dương (Back)
+            { 'R', Vector3.right },   // +X: Đỏ (Right)
+            { 'L', Vector3.left }     // -X: Cam (Left)
         };
 
         // Tìm mặt nào đang hướng thẳng về phía Camera nhất (chính là F trên màn hình)
@@ -418,8 +419,8 @@ public class RubikRotator : MonoBehaviour
             case 'L': axis = Vector3.right; layerCoordinate = -1f; angle = -90f; break;
             case 'U': axis = Vector3.up; layerCoordinate = 1f; angle = 90f; break;
             case 'D': axis = Vector3.up; layerCoordinate = -1f; angle = -90f; break;
-            case 'F': axis = Vector3.forward; layerCoordinate = 1f; angle = -90f; break;
-            case 'B': axis = Vector3.forward; layerCoordinate = -1f; angle = 90f; break;
+            case 'F': axis = Vector3.forward; layerCoordinate = -1f; angle = -90f; break;
+            case 'B': axis = Vector3.forward; layerCoordinate = 1f; angle = 90f; break;
             case 'M': axis = Vector3.right; layerCoordinate = 0f; angle = -90f; break;
             case 'E': axis = Vector3.up; layerCoordinate = 0f; angle = -90f; break;
             case 'S': axis = Vector3.forward; layerCoordinate = 0f; angle = -90f; break;

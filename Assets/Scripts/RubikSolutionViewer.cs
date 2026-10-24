@@ -56,9 +56,17 @@ public class RubikSolutionViewer : MonoBehaviour
     private void UpdateButtonsState()
     {
         bool isBusy = rotator != null && rotator.IsBusy;
-        int total = currentSolution.Count;
+        int total = currentSolution != null ? currentSolution.Count : 0;
 
-        // Tự động mở khóa lại nút Lùi và Tiếp theo khi khối Rubik xoay xong
+        if (total == 0)
+        {
+            if (btnPrevStep != null) btnPrevStep.interactable = false;
+            if (btnNextStep != null) btnNextStep.interactable = false;
+            if (btnAutoSolve != null) btnAutoSolve.interactable = false;
+            return;
+        }
+
+        if (btnAutoSolve != null) btnAutoSolve.interactable = !isBusy;
         if (btnPrevStep != null) btnPrevStep.interactable = !isBusy && currentStepIndex > 0 && !isAutoSolving;
         if (btnNextStep != null) btnNextStep.interactable = !isBusy && currentStepIndex < total && !isAutoSolving;
     }
@@ -74,7 +82,34 @@ public class RubikSolutionViewer : MonoBehaviour
 
         if (currentSolution == null || currentSolution.Count == 0)
         {
-            Debug.Log("[SolutionViewer] Không cần giải (Rubik đã giải xong hoặc chưa trộn).");
+            if (stateManager != null && stateManager.IsSolved())
+            {
+                Debug.Log("[SolutionViewer] Khối Rubik đã giải hoàn thành.");
+                if (solverPanel != null)
+                {
+                    solverPanel.SetActive(true);
+                    if (stepInfoText != null) stepInfoText.text = "<b>HOÀN TẤT</b>";
+                    if (nextMoveText != null) nextMoveText.text = "<color=#10B981><b>🎉 Khối Rubik đã ở trạng thái hoàn thành!</b></color>";
+                    if (fullFormulaText != null) fullFormulaText.text = "6 mặt đã đồng màu hoàn hảo. Không cần thêm bước giải.";
+                    UpdateButtonsState();
+                }
+            }
+            else
+            {
+                string error = (solver != null && !string.IsNullOrEmpty(solver.LastErrorMessage))
+                    ? solver.LastErrorMessage
+                    : "Không tìm thấy lời giải hợp lệ cho khối Rubik này!";
+
+                Debug.LogWarning($"[SolutionViewer] Lỗi giải: {error}");
+                if (solverPanel != null)
+                {
+                    solverPanel.SetActive(true);
+                    if (stepInfoText != null) stepInfoText.text = "<color=#EF4444><b>LỖI KHỐI RUBIK</b></color>";
+                    if (nextMoveText != null) nextMoveText.text = "<color=#EF4444><b>⚠️ Không thể giải khối Rubik</b></color>";
+                    if (fullFormulaText != null) fullFormulaText.text = $"<color=#F87171>{error}</color>\n\n<size=14><color=#9CA3AF>Gợi ý: Kiểm tra lại các mặt đã quét camera hoặc dùng bảng 'Tô màu 2D' để sửa các ô bị nhầm màu.</color></size>";
+                    UpdateButtonsState();
+                }
+            }
             return;
         }
 

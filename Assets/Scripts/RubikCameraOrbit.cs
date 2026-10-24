@@ -20,7 +20,8 @@ public class RubikCameraOrbit : MonoBehaviour
     public float maxDistance = 15.0f;
 
     private float distance = 7.0f;
-    private float x = 30.0f;
+    // Góc mặc định (-35, 20) nhìn trực diện vào 3 mặt chuẩn: Trên (Trắng - U), Trước-Trái (Xanh lá - F), Trước-Phải (Đỏ - R)
+    private float x = -35.0f;
     private float y = 20.0f;
 
     void Start()
