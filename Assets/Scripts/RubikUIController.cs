@@ -282,7 +282,7 @@ public class RubikUIController : MonoBehaviour
 
     private void UpdateInteractableStates()
     {
-        bool isBusy = rotator != null && rotator.IsBusy;
+        bool isBusy = (rotator != null && rotator.IsBusy) || (solutionViewer != null && solutionViewer.isCalculatingSolution);
         bool hasUndo = stateManager != null && stateManager.GetUndoMoveHistory().Count > 0;
 
         if (btnScramble != null) btnScramble.interactable = !isBusy;

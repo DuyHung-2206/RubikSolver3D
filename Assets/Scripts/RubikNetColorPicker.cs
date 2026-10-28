@@ -17,6 +17,7 @@ public class RubikNetColorPicker : MonoBehaviour
     public Button btnApplyToCube;
     public Button btnResetToSolved;
     public Button btnClose;
+    public Button btnCloseTop;
 
     [Header("Bảng Chọn Màu (Palette)")]
     public Button btnColorWhite;
@@ -32,7 +33,7 @@ public class RubikNetColorPicker : MonoBehaviour
     // Dữ liệu màu 6 mặt đang tô trên lưới 2D (mỗi mặt 9 ký tự)
     private readonly Dictionary<char, char[]> netFaces = new Dictionary<char, char[]>();
 
-    // Bảng màu thực tế hiển thị trên UI
+    // Bảng màu thực tế hiển thị trên UI (Chuẩn WCA đồng nhất với 3D)
     private static readonly Dictionary<char, Color> DisplayColors = new Dictionary<char, Color>()
     {
         { 'W', new Color(0.96f, 0.96f, 0.96f) }, // Trắng
@@ -45,6 +46,7 @@ public class RubikNetColorPicker : MonoBehaviour
 
     // Lưu các Button ô vuông trên lưới để đổi màu UI khi tô
     private readonly Dictionary<string, Image> cellImages = new Dictionary<string, Image>();
+    private bool paletteEventsBound = false;
 
     private void Awake()
     {
@@ -61,27 +63,53 @@ public class RubikNetColorPicker : MonoBehaviour
 
     private void Start()
     {
-        AutoBindReferences();
-
         if (netPanel != null)
             netPanel.SetActive(false);
 
-        // Gắn sự kiện cho Palette
-        if (btnColorWhite != null) btnColorWhite.onClick.AddListener(() => SelectColor('W'));
-        if (btnColorYellow != null) btnColorYellow.onClick.AddListener(() => SelectColor('Y'));
-        if (btnColorGreen != null) btnColorGreen.onClick.AddListener(() => SelectColor('G'));
-        if (btnColorBlue != null) btnColorBlue.onClick.AddListener(() => SelectColor('B'));
-        if (btnColorRed != null) btnColorRed.onClick.AddListener(() => SelectColor('R'));
-        if (btnColorOrange != null) btnColorOrange.onClick.AddListener(() => SelectColor('O'));
+        BindNetPickerUIAndEvents();
+    }
 
-        if (btnApplyToCube != null) btnApplyToCube.onClick.AddListener(ApplyNetTo3DCube);
-        if (btnResetToSolved != null) btnResetToSolved.onClick.AddListener(ResetNetToSolved);
-        if (btnClose != null) btnClose.onClick.AddListener(ClosePanel);
+    public void BindNetPickerUIAndEvents()
+    {
+        AutoBindReferences();
 
-        // Tự động khởi tạo lưới 54 ô theo hình chữ thập nếu chưa có
+        if (netFaces.Count == 0)
+            InitDefaultSolvedNet();
+
+        if (!paletteEventsBound)
+        {
+            if (btnColorWhite != null) btnColorWhite.onClick.AddListener(() => SelectColor('W'));
+            if (btnColorYellow != null) btnColorYellow.onClick.AddListener(() => SelectColor('Y'));
+            if (btnColorGreen != null) btnColorGreen.onClick.AddListener(() => SelectColor('G'));
+            if (btnColorBlue != null) btnColorBlue.onClick.AddListener(() => SelectColor('B'));
+            if (btnColorRed != null) btnColorRed.onClick.AddListener(() => SelectColor('R'));
+            if (btnColorOrange != null) btnColorOrange.onClick.AddListener(() => SelectColor('O'));
+            paletteEventsBound = true;
+        }
+
+        if (btnApplyToCube != null)
+        {
+            btnApplyToCube.onClick.RemoveListener(ApplyNetTo3DCube);
+            btnApplyToCube.onClick.AddListener(ApplyNetTo3DCube);
+        }
+        if (btnResetToSolved != null)
+        {
+            btnResetToSolved.onClick.RemoveListener(ResetNetToSolved);
+            btnResetToSolved.onClick.AddListener(ResetNetToSolved);
+        }
+        if (btnClose != null)
+        {
+            btnClose.onClick.RemoveListener(ClosePanel);
+            btnClose.onClick.AddListener(ClosePanel);
+        }
+        if (btnCloseTop != null)
+        {
+            btnCloseTop.onClick.RemoveListener(ClosePanel);
+            btnCloseTop.onClick.AddListener(ClosePanel);
+        }
+
         BuildNetGridUI();
-
-        SelectColor('W');
+        SelectColor(selectedColor);
         ValidateNetState();
     }
 
@@ -93,12 +121,14 @@ public class RubikNetColorPicker : MonoBehaviour
 
     public void TogglePanel()
     {
-        AutoBindReferences();
+        BindNetPickerUIAndEvents();
 
         if (netPanel == null) return;
-        netPanel.SetActive(!netPanel.activeSelf);
-        if (netPanel.activeSelf)
+        bool nextActive = !netPanel.activeSelf;
+        netPanel.SetActive(nextActive);
+        if (nextActive)
         {
+            netPanel.transform.SetAsLastSibling();
             ReadCurrentCubeToNet();
             ValidateNetState();
         }
@@ -131,41 +161,44 @@ public class RubikNetColorPicker : MonoBehaviour
         {
             if (netContainer == null)
             {
-                Transform c = netPanel.transform.Find("NetContainer");
+                Transform c = FindChildRecursive(netPanel.transform, "NetContainer");
                 if (c != null) netContainer = c;
             }
 
             if (statusText == null)
             {
-                Transform st = netPanel.transform.Find("StatusText");
+                Transform st = FindChildRecursive(netPanel.transform, "StatusText");
                 if (st != null) statusText = st.GetComponent<TextMeshProUGUI>();
             }
 
             if (countInfoText == null)
             {
-                Transform ci = netPanel.transform.Find("CountInfoText");
+                Transform ci = FindChildRecursive(netPanel.transform, "CountInfoText");
                 if (ci != null) countInfoText = ci.GetComponent<TextMeshProUGUI>();
             }
 
             if (btnApplyToCube == null)
             {
-                Transform b = netPanel.transform.Find("BtnApplyToCube");
-                if (b == null) b = FindChildRecursive(netPanel.transform, "BtnApplyToCube");
+                Transform b = FindChildRecursive(netPanel.transform, "BtnApplyToCube");
                 if (b != null) btnApplyToCube = b.GetComponent<Button>();
             }
 
             if (btnResetToSolved == null)
             {
-                Transform b = netPanel.transform.Find("BtnResetSolved");
-                if (b == null) b = FindChildRecursive(netPanel.transform, "BtnResetSolved");
+                Transform b = FindChildRecursive(netPanel.transform, "BtnResetSolved");
                 if (b != null) btnResetToSolved = b.GetComponent<Button>();
             }
 
             if (btnClose == null)
             {
-                Transform b = netPanel.transform.Find("BtnClose");
-                if (b == null) b = FindChildRecursive(netPanel.transform, "BtnClose");
+                Transform b = FindChildRecursive(netPanel.transform, "BtnClose");
                 if (b != null) btnClose = b.GetComponent<Button>();
+            }
+
+            if (btnCloseTop == null)
+            {
+                Transform b = FindChildRecursive(netPanel.transform, "BtnCloseTop");
+                if (b != null) btnCloseTop = b.GetComponent<Button>();
             }
 
             if (btnColorWhite == null) btnColorWhite = FindButton(netPanel.transform, "BtnWhite", "BtnColorWhite");
@@ -193,6 +226,7 @@ public class RubikNetColorPicker : MonoBehaviour
 
     private Transform FindChildRecursive(Transform parent, string name)
     {
+        if (parent == null) return null;
         for (int i = 0; i < parent.childCount; i++)
         {
             Transform child = parent.GetChild(i);
@@ -235,28 +269,53 @@ public class RubikNetColorPicker : MonoBehaviour
         if (btn == null) return;
         Outline outline = btn.GetComponent<Outline>();
         if (outline == null) outline = btn.gameObject.AddComponent<Outline>();
-        outline.effectColor = Color.white;
-        outline.effectDistance = new Vector2(3, -3);
-        outline.enabled = active;
+        outline.effectColor = active
+            ? new Color32(0x1E, 0x29, 0x3B, 255)
+            : new Color(0.06f, 0.09f, 0.16f, 0.14f);
+        outline.effectDistance = active ? new Vector2(3f, -3f) : new Vector2(1.5f, -1.5f);
+        outline.enabled = true;
+
+        btn.transform.localScale = active ? new Vector3(1.04f, 1.04f, 1f) : Vector3.one;
     }
 
     /// <summary>
-    /// Tự động sinh giao diện chữ thập 54 ô trong netContainer
+    /// Tự động sinh giao diện chữ thập 54 ô trong netContainer với đế bo góc chuẩn Friendly Puzzle
     /// </summary>
     private void BuildNetGridUI()
     {
         if (netContainer == null) return;
 
+        // Kiểm tra nếu đã dựng đủ 54 ô còn sống thì chỉ cần cập nhật màu
+        if (cellImages.Count == 54)
+        {
+            bool allValid = true;
+            foreach (var img in cellImages.Values)
+            {
+                if (img == null) { allValid = false; break; }
+            }
+            if (allValid)
+            {
+                UpdateAllCellUI();
+                return;
+            }
+        }
+
+        cellImages.Clear();
+        for (int c = netContainer.childCount - 1; c >= 0; c--)
+        {
+            Destroy(netContainer.GetChild(c).gameObject);
+        }
+
         // Vị trí của 6 mặt trong hệ lưới chữ thập (X, Y)
-        // Kích thước 1 mặt 3x3 là khoảng 105x105 pixel
+        // Căn tâm đối xứng cho chữ thập 4 cột (L, F, R, B) x 3 hàng (U, F, D)
         var facePositions = new Dictionary<char, Vector2>()
         {
-            { 'U', new Vector2(0, 110) },
-            { 'L', new Vector2(-110, 0) },
-            { 'F', new Vector2(0, 0) },
-            { 'R', new Vector2(110, 0) },
-            { 'B', new Vector2(220, 0) },
-            { 'D', new Vector2(0, -110) }
+            { 'U', new Vector2(-56f, 112f) },
+            { 'L', new Vector2(-168f, 0f) },
+            { 'F', new Vector2(-56f, 0f) },
+            { 'R', new Vector2(56f, 0f) },
+            { 'B', new Vector2(168f, 0f) },
+            { 'D', new Vector2(-56f, -112f) }
         };
 
         foreach (var pair in facePositions)
@@ -264,37 +323,60 @@ public class RubikNetColorPicker : MonoBehaviour
             char face = pair.Key;
             Vector2 pos = pair.Value;
 
-            GameObject faceObj = new GameObject($"Face_{face}", typeof(RectTransform));
+            GameObject faceObj = new GameObject($"Face_{face}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
             faceObj.transform.SetParent(netContainer, false);
             RectTransform rt = faceObj.GetComponent<RectTransform>();
             rt.anchoredPosition = pos;
-            rt.sizeDelta = new Vector2(100, 100);
+            rt.sizeDelta = new Vector2(104f, 104f);
+
+            Image faceBg = faceObj.GetComponent<Image>();
+            faceBg.sprite = RubikUISpriteFactory.GetRoundedSprite(10);
+            faceBg.type = Image.Type.Sliced;
+            faceBg.color = new Color32(0x1E, 0x29, 0x3B, 255); // Khung nhựa đen xám bo góc của Rubik
 
             GridLayoutGroup grid = faceObj.AddComponent<GridLayoutGroup>();
-            grid.cellSize = new Vector2(30, 30);
-            grid.spacing = new Vector2(3, 3);
+            grid.padding = new RectOffset(5, 5, 5, 5);
+            grid.cellSize = new Vector2(28.5f, 28.5f);
+            grid.spacing = new Vector2(4f, 4f);
             grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
             grid.constraintCount = 3;
+            grid.childAlignment = TextAnchor.MiddleCenter;
 
             for (int i = 0; i < 9; i++)
             {
                 int index = i;
-                GameObject cell = new GameObject($"Cell_{face}_{index}", typeof(RectTransform), typeof(Image), typeof(Button));
+                GameObject cell = new GameObject($"Cell_{face}_{index}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
                 cell.transform.SetParent(faceObj.transform, false);
 
                 Image img = cell.GetComponent<Image>();
+                img.sprite = RubikUISpriteFactory.GetRoundedSprite(6);
+                img.type = Image.Type.Sliced;
                 img.color = DisplayColors[netFaces[face][index]];
                 cellImages[$"{face}_{index}"] = img;
 
                 Button btn = cell.GetComponent<Button>();
                 btn.onClick.AddListener(() => OnCellClicked(face, index));
 
-                // Ô tâm (index 4) khóa viền đen làm mốc định hướng
+                // Ô tâm (index 4) hiển thị ký hiệu mặt (U, D, F, B, R, L) làm mốc chuẩn WCA
                 if (index == 4)
                 {
-                    Outline centerBorder = cell.AddComponent<Outline>();
-                    centerBorder.effectColor = Color.black;
-                    centerBorder.effectDistance = new Vector2(2, -2);
+                    GameObject centerLblObj = new GameObject("CenterLabel", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+                    centerLblObj.transform.SetParent(cell.transform, false);
+                    RectTransform lRT = centerLblObj.GetComponent<RectTransform>();
+                    lRT.anchorMin = Vector2.zero;
+                    lRT.anchorMax = Vector2.one;
+                    lRT.sizeDelta = Vector2.zero;
+
+                    TextMeshProUGUI lbl = centerLblObj.GetComponent<TextMeshProUGUI>();
+                    lbl.text = face.ToString();
+                    lbl.fontSize = 13f;
+                    lbl.fontStyle = FontStyles.Bold;
+                    lbl.alignment = TextAlignmentOptions.Center;
+                    char centerCol = netFaces[face][index];
+                    lbl.color = (centerCol == 'W' || centerCol == 'Y')
+                        ? new Color32(0x1E, 0x29, 0x3B, 200)
+                        : new Color(1f, 1f, 1f, 0.9f);
+                    lbl.raycastTarget = false;
                 }
             }
         }
@@ -337,22 +419,21 @@ public class RubikNetColorPicker : MonoBehaviour
 
         if (countInfoText != null)
         {
-            countInfoText.text = $"Trắng: {counts['W']}/9 | Vàng: {counts['Y']}/9 | Xanh lá: {counts['G']}/9\n" +
-                                 $"Xanh dương: {counts['B']}/9 | Đỏ: {counts['R']}/9 | Cam: {counts['O']}/9";
+            countInfoText.text = $"Trắng: <b>{counts['W']}/9</b>   •   Vàng: <b>{counts['Y']}/9</b>   •   Xanh lá: <b>{counts['G']}/9</b>   •   " +
+                                 $"Xanh dương: <b>{counts['B']}/9</b>   •   Đỏ: <b>{counts['R']}/9</b>   •   Cam: <b>{counts['O']}/9</b>";
         }
 
         foreach (var pair in counts)
         {
             if (pair.Value != 9)
             {
-                SetStatus($"Lỗi: Mỗi màu phải có đúng 9 ô! ({pair.Key} đang có {pair.Value} ô)", Color.red);
+                SetStatus($"Mỗi màu phải có đúng 9 ô! (Màu '{pair.Key}' đang có {pair.Value}/9 ô)", Color.red);
                 if (btnApplyToCube != null) btnApplyToCube.interactable = false;
                 return false;
             }
         }
 
         // 2. Kiểm tra tính hợp lệ vật lý (Không được có 2 màu đối diện trên cùng 1 viên cạnh/góc)
-        // Các cặp màu đối diện không bao giờ chạm nhau: Trắng-Vàng, Xanh lá-Xanh dương, Đỏ-Cam
         if (!CheckPhysicalEdgeAndCorners(out string errorMsg))
         {
             SetStatus($"Lỗi vật lý: {errorMsg}", Color.red);
@@ -421,7 +502,10 @@ public class RubikNetColorPicker : MonoBehaviour
         // 3. Cập nhật Material trực tiếp cho nhãn dán trên 27 khối 3D
         Update3DStickerMaterials(state);
 
-        SetStatus("Đã đồng bộ lên khối Rubik 3D thành công!", Color.cyan);
+        // Khởi tạo trước bảng tra cứu Kociemba trên luồng phụ để khi nhấn Giải tự động cực mượt
+        RubikSolver.WarmupTablesInBackground();
+
+        SetStatus("Đã đồng bộ lên khối Rubik 3D thành công!", Color.green);
         netPanel.SetActive(false);
     }
 
@@ -502,7 +586,7 @@ public class RubikNetColorPicker : MonoBehaviour
             for (int i = 0; i < 9; i++)
             {
                 string key = $"{face}_{i}";
-                if (cellImages.ContainsKey(key))
+                if (cellImages.ContainsKey(key) && cellImages[key] != null)
                 {
                     cellImages[key].color = DisplayColors[pair.Value[i]];
                 }
@@ -515,7 +599,17 @@ public class RubikNetColorPicker : MonoBehaviour
         if (statusText != null)
         {
             statusText.text = msg;
-            statusText.color = col;
+
+            if (col == Color.green)
+                statusText.color = new Color32(0x16, 0xA3, 0x4A, 255); // Xanh lá đậm #16A34A
+            else if (col == Color.red)
+                statusText.color = new Color32(0xDC, 0x26, 0x26, 255); // Đỏ đậm #DC2626
+            else if (col == Color.yellow)
+                statusText.color = new Color32(0xD9, 0x77, 0x06, 255); // Cam hổ phách #D97706
+            else if (col == Color.cyan || col == Color.white)
+                statusText.color = new Color32(0x02, 0x84, 0xC7, 255); // Xanh dương #0284C7
+            else
+                statusText.color = col;
         }
     }
 }

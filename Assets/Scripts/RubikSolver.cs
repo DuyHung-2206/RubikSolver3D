@@ -1,10 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 
 public class RubikSolver : MonoBehaviour
 {
     private RubikStateManager stateManager;
+    private static readonly object kociembaLock = new object();
+    private static bool isWarmingUpTables = false;
+    private static bool tablesWarmedUp = false;
 
     public string LastErrorMessage { get; private set; } = string.Empty;
 
@@ -15,6 +19,48 @@ public class RubikSolver : MonoBehaviour
             stateManager = FindAnyObjectByType<RubikStateManager>();
     }
 
+    private void Start()
+    {
+        WarmupTablesInBackground();
+    }
+
+    /// <summary>
+    /// Khởi tạo trước bảng tra cứu Kociemba (Move Tables & Pruning Tables) trên luồng phụ
+    /// để khi người dùng nhấn Giải tự động sẽ không phải chờ khởi tạo bảng lần đầu.
+    /// </summary>
+    public static void WarmupTablesInBackground()
+    {
+        if (tablesWarmedUp || isWarmingUpTables)
+            return;
+
+        isWarmingUpTables = true;
+        Task.Run(() =>
+        {
+            try
+            {
+                lock (kociembaLock)
+                {
+                    if (!tablesWarmedUp)
+                    {
+                        string info;
+                        Kociemba.SearchRunTime.solution(
+                            "UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB",
+                            out info, maxDepth: 1, timeOut: 1000);
+                        tablesWarmedUp = true;
+                    }
+                }
+            }
+            catch
+            {
+                // Bỏ qua nếu có ngoại lệ trong lúc khởi tạo ngầm
+            }
+            finally
+            {
+                isWarmingUpTables = false;
+            }
+        });
+    }
+
     /// <summary>
     /// Chuyển đổi RubikState hiện tại thành chuỗi 54 ký tự URFDLB chuẩn quy ước quốc tế.
     /// </summary>
@@ -23,7 +69,20 @@ public class RubikSolver : MonoBehaviour
         if (stateManager == null || stateManager.CurrentState == null)
             return string.Empty;
 
-        RubikState state = stateManager.CurrentState;
+        string cubeDef = GetCubeDefinitionStringFromState(stateManager.CurrentState, out string err);
+        if (!string.IsNullOrEmpty(err))
+            LastErrorMessage = err;
+        return cubeDef;
+    }
+
+    /// <summary>
+    /// Chuyển đổi một bản sao RubikState bất kỳ thành chuỗi 54 ký tự URFDLB (An toàn đa luồng - Thread-safe).
+    /// </summary>
+    public static string GetCubeDefinitionStringFromState(RubikState state, out string errorMsg)
+    {
+        errorMsg = string.Empty;
+        if (state == null)
+            return string.Empty;
 
         // Xác định màu của 6 tâm để ánh xạ: Tâm nào thì mang tên mặt đó
         char colorU = state.GetColor('U', 1, 1);
@@ -37,7 +96,7 @@ public class RubikSolver : MonoBehaviour
         HashSet<char> centerSet = new HashSet<char>(centers);
         if (centerSet.Count != 6)
         {
-            LastErrorMessage = "6 tâm mặt không đủ 6 màu khác nhau. Vui lòng kiểm tra lại màu các mặt.";
+            errorMsg = "6 tâm mặt không đủ 6 màu khác nhau. Vui lòng kiểm tra lại màu các mặt.";
             return string.Empty;
         }
 
@@ -71,7 +130,7 @@ public class RubikSolver : MonoBehaviour
     }
 
     /// <summary>
-    /// Tìm lời giải cho khối Rubik hiện tại.
+    /// Tìm lời giải cho khối Rubik hiện tại (Đồng bộ trên Main Thread).
     /// Trả về danh sách các nước đi chuẩn (ví dụ: ["R", "U", "R'", "F2", ...])
     /// </summary>
     public List<string> SolveCurrentState()
@@ -79,74 +138,80 @@ public class RubikSolver : MonoBehaviour
         if (stateManager == null)
             stateManager = FindAnyObjectByType<RubikStateManager>();
 
-        if (stateManager != null && stateManager.IsSolved())
+        if (stateManager == null || stateManager.CurrentState == null)
         {
-            Debug.Log("[RubikSolver] Khối Rubik đã ở trạng thái giải hoàn chỉnh!");
+            LastErrorMessage = "Không tìm thấy trạng thái khối Rubik hiện tại.";
+            return new List<string>();
+        }
+
+        RubikState snapshot = stateManager.CurrentState.Clone();
+        List<string> historySnapshot = stateManager.GetUndoMoveHistory();
+
+        List<string> result = SolveStateSnapshot(snapshot, historySnapshot, out string err);
+        LastErrorMessage = err;
+        return result;
+    }
+
+    /// <summary>
+    /// Tìm lời giải trên bản sao trạng thái RubikState (Hoàn toàn Thread-Safe, chạy được trong Task.Run để không gây đơ màn hình).
+    /// </summary>
+    public List<string> SolveStateSnapshot(RubikState stateSnapshot, List<string> historySnapshot, out string errorMessage)
+    {
+        errorMessage = string.Empty;
+
+        if (stateSnapshot == null)
+        {
+            errorMessage = "Trạng thái khối Rubik rỗng.";
+            LastErrorMessage = errorMessage;
+            return new List<string>();
+        }
+
+        if (stateSnapshot.IsSolved())
+        {
             LastErrorMessage = string.Empty;
             return new List<string>();
         }
 
-        return SolveFromHistoryOrAlgorithm();
-    }
-
-    private List<string> SolveFromHistoryOrAlgorithm()
-    {
-        LastErrorMessage = string.Empty;
-
         // 1. Lấy lịch sử nước đi từ StateManager (nếu người dùng tự xoay trên 3D)
-        List<string> history = null;
-        if (stateManager != null)
-        {
-            history = stateManager.GetUndoMoveHistory();
-        }
-
-        if (history != null && history.Count > 0)
+        if (historySnapshot != null && historySnapshot.Count > 0)
         {
             List<string> rawInverses = new List<string>();
-            // Phép nghịch đảo: (M1 M2 ... Mk)^(-1) = Mk^(-1) ... M2^(-1) M1^(-1)
-            // Vì history[0] là Mk (nước mới nhất), ta duyệt xuôi từ 0 đến history.Count - 1
-            for (int i = 0; i < history.Count; i++)
+            for (int i = 0; i < historySnapshot.Count; i++)
             {
-                rawInverses.Add(RubikStateManager.GetInverseMove(history[i]));
+                rawInverses.Add(RubikStateManager.GetInverseMove(historySnapshot[i]));
             }
 
-            // Tối ưu hóa chuỗi nước đi: gộp các nước cùng mặt (R + R = R2), triệt tiêu nước đối nghịch (R + R' = 0)
             List<string> optimized = SimplifyMoves(rawInverses);
 
-            // Kiểm tra xác thực tính toán trên bản sao logic ma trận RubikState
-            if (VerifySolution(optimized))
+            if (VerifySolutionOnState(stateSnapshot, optimized))
             {
-                Debug.Log($"<color=green>[RubikSolver] Đã tạo công thức tối ưu ({optimized.Count} bước): {string.Join(" ", optimized)}</color>");
+                LastErrorMessage = string.Empty;
                 return optimized;
             }
 
-            if (VerifySolution(rawInverses))
+            if (VerifySolutionOnState(stateSnapshot, rawInverses))
             {
-                Debug.Log($"<color=yellow>[RubikSolver] Sử dụng công thức nghịch đảo gốc ({rawInverses.Count} bước): {string.Join(" ", rawInverses)}</color>");
+                LastErrorMessage = string.Empty;
                 return rawInverses;
             }
         }
 
         // 2. Thử giải nhanh bằng BFS với độ sâu <= 3
-        if (stateManager != null && stateManager.CurrentState != null)
+        var bfsSolution = SolveByBFS(stateSnapshot, 3);
+        if (bfsSolution != null && bfsSolution.Count > 0 && VerifySolutionOnState(stateSnapshot, bfsSolution))
         {
-            var bfsSolution = SolveByBFS(stateManager.CurrentState, 3);
-            if (bfsSolution != null && bfsSolution.Count > 0 && VerifySolution(bfsSolution))
-            {
-                Debug.Log($"<color=green>[RubikSolver] Giải thành công bằng thuật toán BFS ({bfsSolution.Count} bước): {string.Join(" ", bfsSolution)}</color>");
-                return bfsSolution;
-            }
+            LastErrorMessage = string.Empty;
+            return bfsSolution;
         }
 
         // 3. Giải trạng thái bất kỳ (từ Camera Scanner hoặc Net Color Picker) bằng thuật toán Kociemba Two-Phase
-        string cubeDef = GetCubeDefinitionString();
-        Debug.Log($"[RubikSolver] Chuỗi 54 facelets Kociemba: {cubeDef}");
-
+        string cubeDef = GetCubeDefinitionStringFromState(stateSnapshot, out string defErr);
         if (string.IsNullOrEmpty(cubeDef) || cubeDef.Length != 54 || cubeDef.Contains("?"))
         {
-            if (string.IsNullOrEmpty(LastErrorMessage))
-                LastErrorMessage = "Không thể tạo chuỗi định nghĩa Rubik: các mặt bị thiếu ô hoặc trùng màu tâm.";
-            Debug.LogError($"[RubikSolver] {LastErrorMessage}");
+            errorMessage = !string.IsNullOrEmpty(defErr)
+                ? defErr
+                : "Không thể tạo chuỗi định nghĩa Rubik: các mặt bị thiếu ô hoặc trùng màu tâm.";
+            LastErrorMessage = errorMessage;
             return new List<string>();
         }
 
@@ -154,26 +219,31 @@ public class RubikSolver : MonoBehaviour
         int verifyResult = Kociemba.Tools.verify(cubeDef);
         if (verifyResult != 0)
         {
-            LastErrorMessage = GetVerifyErrorMessage(verifyResult);
-            Debug.LogError($"[RubikSolver] Khối Rubik không hợp lệ: {LastErrorMessage}");
+            errorMessage = GetVerifyErrorMessage(verifyResult);
+            LastErrorMessage = errorMessage;
             return new List<string>();
         }
 
         try
         {
             string info;
-            string solutionResult = Kociemba.SearchRunTime.solution(cubeDef, out info, maxDepth: 22, timeOut: 6000);
+            string solutionResult;
+            lock (kociembaLock)
+            {
+                solutionResult = Kociemba.SearchRunTime.solution(cubeDef, out info, maxDepth: 22, timeOut: 6000);
+                tablesWarmedUp = true;
+            }
 
             if (string.IsNullOrEmpty(solutionResult))
             {
-                Debug.Log("[RubikSolver] Khối Rubik đã được giải hoàn tất.");
+                LastErrorMessage = string.Empty;
                 return new List<string>();
             }
 
             if (solutionResult.StartsWith("Error"))
             {
-                LastErrorMessage = GetSearchErrorMessage(solutionResult);
-                Debug.LogError($"[RubikSolver] Thuật toán Kociemba báo lỗi: {LastErrorMessage}");
+                errorMessage = GetSearchErrorMessage(solutionResult);
+                LastErrorMessage = errorMessage;
                 return new List<string>();
             }
 
@@ -187,26 +257,26 @@ public class RubikSolver : MonoBehaviour
             }
 
             List<string> optimizedKociemba = SimplifyMoves(kociembaMoves);
-            if (VerifySolution(optimizedKociemba))
+            if (VerifySolutionOnState(stateSnapshot, optimizedKociemba))
             {
-                Debug.Log($"<color=green>[RubikSolver] Kociemba giải thành công ({optimizedKociemba.Count} bước tối ưu): {string.Join(" ", optimizedKociemba)}</color>");
+                LastErrorMessage = string.Empty;
                 return optimizedKociemba;
             }
 
-            if (VerifySolution(kociembaMoves))
+            if (VerifySolutionOnState(stateSnapshot, kociembaMoves))
             {
-                Debug.Log($"<color=green>[RubikSolver] Kociemba giải thành công ({kociembaMoves.Count} bước): {string.Join(" ", kociembaMoves)}</color>");
+                LastErrorMessage = string.Empty;
                 return kociembaMoves;
             }
 
-            Debug.LogWarning("[RubikSolver] Chuỗi giải Kociemba không vượt qua bước kiểm tra mô phỏng.");
-            LastErrorMessage = "Chuỗi nước đi tìm được không đưa được khối Rubik về trạng thái hoàn chỉnh.";
+            errorMessage = "Chuỗi nước đi tìm được không đưa được khối Rubik về trạng thái hoàn chỉnh.";
+            LastErrorMessage = errorMessage;
             return new List<string>();
         }
         catch (Exception ex)
         {
-            LastErrorMessage = $"Lỗi khi thực thi thuật toán giải: {ex.Message}";
-            Debug.LogError($"[RubikSolver] Ngoại lệ Kociemba: {ex}");
+            errorMessage = $"Lỗi khi thực thi thuật toán giải: {ex.Message}";
+            LastErrorMessage = errorMessage;
             return new List<string>();
         }
     }
@@ -258,16 +328,16 @@ public class RubikSolver : MonoBehaviour
     }
 
     /// <summary>
-    /// Kiểm tra mô phỏng xem chuỗi nước đi có đưa Rubik về 6 mặt đồng màu hay không.
+    /// Kiểm tra mô phỏng xem chuỗi nước đi có đưa bản sao RubikState về 6 mặt đồng màu hay không (Thread-safe).
     /// </summary>
-    public bool VerifySolution(List<string> solution)
+    public static bool VerifySolutionOnState(RubikState baseState, List<string> solution)
     {
-        if (stateManager == null || stateManager.CurrentState == null || solution == null)
+        if (baseState == null || solution == null)
             return false;
 
         try
         {
-            RubikState testState = stateManager.CurrentState.Clone();
+            RubikState testState = baseState.Clone();
             foreach (string move in solution)
             {
                 if (!string.IsNullOrEmpty(move))
@@ -275,11 +345,21 @@ public class RubikSolver : MonoBehaviour
             }
             return testState.IsSolved();
         }
-        catch (Exception ex)
+        catch
         {
-            Debug.LogError($"[RubikSolver] Lỗi khi xác thực chuỗi giải: {ex.Message}");
             return false;
         }
+    }
+
+    /// <summary>
+    /// Kiểm tra mô phỏng xem chuỗi nước đi có đưa Rubik về 6 mặt đồng màu hay không.
+    /// </summary>
+    public bool VerifySolution(List<string> solution)
+    {
+        if (stateManager == null || stateManager.CurrentState == null || solution == null)
+            return false;
+
+        return VerifySolutionOnState(stateManager.CurrentState, solution);
     }
 
     /// <summary>

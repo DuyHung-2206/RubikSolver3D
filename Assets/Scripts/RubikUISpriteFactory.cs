@@ -35,7 +35,8 @@ public static class RubikUISpriteFactory
         ChevronLeft,
         ChevronRight,
         BackArrow,
-        Check
+        Check,
+        Close
     }
 
     private static readonly Dictionary<string, Sprite> roundedCache = new Dictionary<string, Sprite>();
@@ -578,6 +579,11 @@ public static class RubikUISpriteFactory
             case IconType.Check:
                 DrawLine(p, s, new Vector2(14, 32), new Vector2(27, 20), 4.2f, w);
                 DrawLine(p, s, new Vector2(27, 20), new Vector2(50, 44), 4.2f, w);
+                break;
+
+            case IconType.Close:
+                DrawLine(p, s, new Vector2(16, 16), new Vector2(48, 48), 4.0f, w);
+                DrawLine(p, s, new Vector2(16, 48), new Vector2(48, 16), 4.0f, w);
                 break;
         }
     }

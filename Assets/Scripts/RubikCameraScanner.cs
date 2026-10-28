@@ -146,6 +146,8 @@ public class RubikCameraScanner : MonoBehaviour
             scannerPanel.SetActive(false);
     }
 
+    private bool eventsBound = false;
+
     private void Start()
     {
         AutoBindReferences();
@@ -153,33 +155,86 @@ public class RubikCameraScanner : MonoBehaviour
         if (scannerPanel != null)
             scannerPanel.SetActive(false);
 
-        // Đăng ký sự kiện nút
-        if (btnCaptureFace != null) btnCaptureFace.onClick.AddListener(CaptureCurrentFace);
-        if (btnRescanFace != null) btnRescanFace.onClick.AddListener(RescanCurrentFace);
-        if (btnNextFace != null) btnNextFace.onClick.AddListener(NextFace);
-        if (btnPrevFace != null) btnPrevFace.onClick.AddListener(PrevFace);
-        if (btnSwitchCamera != null) btnSwitchCamera.onClick.AddListener(SwitchCamera);
-        if (btnApplyToCube != null) btnApplyToCube.onClick.AddListener(ApplyTo3DCube);
-        if (btnClose != null) btnClose.onClick.AddListener(CloseScanner);
+        BindScannerUIAndEvents();
+    }
+
+    public void BindScannerUIAndEvents()
+    {
+        AutoBindReferences();
+
+        if (btnCaptureFace != null)
+        {
+            btnCaptureFace.onClick.RemoveListener(CaptureCurrentFace);
+            btnCaptureFace.onClick.AddListener(CaptureCurrentFace);
+        }
+        if (btnRescanFace != null)
+        {
+            btnRescanFace.onClick.RemoveListener(RescanCurrentFace);
+            btnRescanFace.onClick.AddListener(RescanCurrentFace);
+        }
+        if (btnNextFace != null)
+        {
+            btnNextFace.onClick.RemoveListener(NextFace);
+            btnNextFace.onClick.AddListener(NextFace);
+        }
+        if (btnPrevFace != null)
+        {
+            btnPrevFace.onClick.RemoveListener(PrevFace);
+            btnPrevFace.onClick.AddListener(PrevFace);
+        }
+        if (btnSwitchCamera != null)
+        {
+            btnSwitchCamera.onClick.RemoveListener(SwitchCamera);
+            btnSwitchCamera.onClick.AddListener(SwitchCamera);
+        }
+        if (btnApplyToCube != null)
+        {
+            btnApplyToCube.onClick.RemoveListener(ApplyTo3DCube);
+            btnApplyToCube.onClick.AddListener(ApplyTo3DCube);
+        }
+        if (btnClose != null)
+        {
+            btnClose.onClick.RemoveListener(CloseScanner);
+            btnClose.onClick.AddListener(CloseScanner);
+        }
 
         if (sliderDistance != null)
         {
             sliderDistance.minValue = 36f;
             sliderDistance.maxValue = 88f;
-            sliderDistance.value = reticleSpread;
+            sliderDistance.SetValueWithoutNotify(reticleSpread);
+            sliderDistance.onValueChanged.RemoveListener(OnDistanceSliderChanged);
             sliderDistance.onValueChanged.AddListener(OnDistanceSliderChanged);
         }
 
-        if (btnNudgeUp != null) btnNudgeUp.onClick.AddListener(() => NudgeReticle(new Vector2(0, 10f)));
-        if (btnNudgeDown != null) btnNudgeDown.onClick.AddListener(() => NudgeReticle(new Vector2(0, -10f)));
-        if (btnNudgeLeft != null) btnNudgeLeft.onClick.AddListener(() => NudgeReticle(new Vector2(-10f, 0)));
-        if (btnNudgeRight != null) btnNudgeRight.onClick.AddListener(() => NudgeReticle(new Vector2(10f, 0)));
-        if (btnResetReticlePos != null) btnResetReticlePos.onClick.AddListener(ResetReticleOffset);
-        if (btnFlipHorizontal != null) btnFlipHorizontal.onClick.AddListener(ToggleFlipHorizontal);
-        if (btnFlipVertical != null) btnFlipVertical.onClick.AddListener(ToggleFlipVertical);
+        if (!eventsBound)
+        {
+            if (btnNudgeUp != null) btnNudgeUp.onClick.AddListener(() => NudgeReticle(new Vector2(0, 10f)));
+            if (btnNudgeDown != null) btnNudgeDown.onClick.AddListener(() => NudgeReticle(new Vector2(0, -10f)));
+            if (btnNudgeLeft != null) btnNudgeLeft.onClick.AddListener(() => NudgeReticle(new Vector2(-10f, 0)));
+            if (btnNudgeRight != null) btnNudgeRight.onClick.AddListener(() => NudgeReticle(new Vector2(10f, 0)));
+            eventsBound = true;
+        }
+
+        if (btnResetReticlePos != null)
+        {
+            btnResetReticlePos.onClick.RemoveListener(ResetReticleOffset);
+            btnResetReticlePos.onClick.AddListener(ResetReticleOffset);
+        }
+        if (btnFlipHorizontal != null)
+        {
+            btnFlipHorizontal.onClick.RemoveListener(ToggleFlipHorizontal);
+            btnFlipHorizontal.onClick.AddListener(ToggleFlipHorizontal);
+        }
+        if (btnFlipVertical != null)
+        {
+            btnFlipVertical.onClick.RemoveListener(ToggleFlipVertical);
+            btnFlipVertical.onClick.AddListener(ToggleFlipVertical);
+        }
 
         BuildPreviewUI();
         BuildReticleUI();
+        BuildFaceBadgesUI();
         ApplyReticleLayout();
         UpdateDistanceLabel();
         UpdateFeedOrientation();
@@ -340,14 +395,14 @@ public class RubikCameraScanner : MonoBehaviour
     {
         flipHorizontal = !flipHorizontal;
         UpdateFeedOrientation();
-        SetStatus(flipHorizontal ? "🪞 Đã BẬT chế độ Lật gương (Mirror)" : "🪞 Đã TẮT Lật gương (Gốc)", Color.cyan);
+        SetStatus(flipHorizontal ? "Đã BẬT chế độ Lật gương (Mirror)" : "Đã TẮT Lật gương (Gốc)", Color.cyan);
     }
 
     public void ToggleFlipVertical()
     {
         flipVertical = !flipVertical;
         UpdateFeedOrientation();
-        SetStatus(flipVertical ? "↕ Đã BẬT Lật dọc (Flip Y)" : "↕ Đã TẮT Lật dọc (Chuẩn)", Color.cyan);
+        SetStatus(flipVertical ? "Đã BẬT Lật dọc (Flip Y)" : "Đã TẮT Lật dọc (Chuẩn)", Color.cyan);
     }
 
     public void UpdateFeedOrientation()
@@ -378,12 +433,13 @@ public class RubikCameraScanner : MonoBehaviour
             var txt = btnFlipHorizontal.GetComponentInChildren<TextMeshProUGUI>();
             if (txt != null)
             {
-                txt.text = flipHorizontal ? "🪞 Gương: BẬT" : "🪞 Gương: TẮT";
+                txt.text = flipHorizontal ? "Gương: BẬT" : "Gương: TẮT";
+                txt.color = flipHorizontal ? Color.white : new Color32(0x33, 0x41, 0x55, 255);
             }
             var img = btnFlipHorizontal.GetComponent<Image>();
             if (img != null)
             {
-                img.color = flipHorizontal ? new Color(0.12f, 0.45f, 0.35f) : new Color(0.20f, 0.25f, 0.35f);
+                img.color = flipHorizontal ? new Color32(0x10, 0xB9, 0x81, 255) : new Color32(0xE2, 0xE8, 0xF0, 255);
             }
         }
 
@@ -392,12 +448,13 @@ public class RubikCameraScanner : MonoBehaviour
             var txt = btnFlipVertical.GetComponentInChildren<TextMeshProUGUI>();
             if (txt != null)
             {
-                txt.text = flipVertical ? "↕ Dọc: LẬT" : "↕ Dọc: CHUẨN";
+                txt.text = flipVertical ? "Dọc: LẬT" : "Dọc: CHUẨN";
+                txt.color = flipVertical ? Color.white : new Color32(0x33, 0x41, 0x55, 255);
             }
             var img = btnFlipVertical.GetComponent<Image>();
             if (img != null)
             {
-                img.color = flipVertical ? new Color(0.45f, 0.20f, 0.20f) : new Color(0.20f, 0.25f, 0.35f);
+                img.color = flipVertical ? new Color32(0xF5, 0x9E, 0x0B, 255) : new Color32(0xE2, 0xE8, 0xF0, 255);
             }
         }
     }
@@ -436,10 +493,11 @@ public class RubikCameraScanner : MonoBehaviour
 
     public void OpenScanner()
     {
-        AutoBindReferences();
+        BindScannerUIAndEvents();
 
         if (scannerPanel == null) return;
         scannerPanel.SetActive(true);
+        scannerPanel.transform.SetAsLastSibling();
 
         StartCamera();
         currentFaceIndex = 0;
@@ -963,8 +1021,27 @@ public class RubikCameraScanner : MonoBehaviour
             faceGuideText.text = FaceGuidesVi[currentFaceIndex];
     }
 
+    private void BuildFaceBadgesUI()
+    {
+        if (faceBadgesContainer == null) return;
+
+        for (int i = 0; i < 6; i++)
+        {
+            char f = FaceOrder[i];
+            Transform badge = faceBadgesContainer.Find($"Badge_{f}");
+            if (badge == null && i < faceBadgesContainer.childCount)
+                badge = faceBadgesContainer.GetChild(i);
+
+            if (badge != null)
+                faceBadgeImages[i] = badge.GetComponent<Image>();
+        }
+    }
+
     private void UpdateFaceBadgesUI()
     {
+        if (faceBadgeImages[0] == null)
+            BuildFaceBadgesUI();
+
         for (int i = 0; i < 6; i++)
         {
             if (faceBadgeImages[i] == null) continue;
@@ -972,17 +1049,22 @@ public class RubikCameraScanner : MonoBehaviour
             bool done = completedFaces.Contains(f);
             bool isCurrent = (i == currentFaceIndex);
 
+            var badgeTxt = faceBadgeImages[i].GetComponentInChildren<TextMeshProUGUI>(true);
+
             if (done)
             {
-                faceBadgeImages[i].color = new Color(0.06f, 0.72f, 0.51f, 1f); // Xanh lá đã quét xong
+                faceBadgeImages[i].color = new Color32(0x16, 0xA3, 0x4A, 255); // Xanh lá đã quét xong
+                if (badgeTxt != null) badgeTxt.color = Color.white;
             }
             else if (isCurrent)
             {
-                faceBadgeImages[i].color = new Color(0.96f, 0.65f, 0.14f, 1f); // Cam đang quét
+                faceBadgeImages[i].color = new Color32(0x25, 0x63, 0xEB, 255); // Xanh dương đang quét
+                if (badgeTxt != null) badgeTxt.color = Color.white;
             }
             else
             {
-                faceBadgeImages[i].color = new Color(0.25f, 0.28f, 0.35f, 0.8f); // Xám chưa quét
+                faceBadgeImages[i].color = new Color32(0xE2, 0xE8, 0xF0, 255); // Xám sáng chưa quét
+                if (badgeTxt != null) badgeTxt.color = new Color32(0x47, 0x55, 0x69, 255);
             }
         }
     }
@@ -1100,7 +1182,10 @@ public class RubikCameraScanner : MonoBehaviour
         bool useCustomMaterials = (toggleCustomMaterialSync != null && toggleCustomMaterialSync.isOn);
         Update3DStickersWithMaterials(state, useCustomMaterials);
 
-        SetStatus("✔ Đã đồng bộ màu từ Camera lên khối Rubik 3D thành công 100%!", Color.green);
+        // Khởi tạo trước bảng tra cứu Kociemba trên luồng phụ để khi nhấn Giải tự động cực mượt
+        RubikSolver.WarmupTablesInBackground();
+
+        SetStatus("Đã đồng bộ màu từ Camera lên khối Rubik 3D thành công 100%!", Color.green);
         CloseScanner();
     }
 
@@ -1230,7 +1315,7 @@ public class RubikCameraScanner : MonoBehaviour
     {
         if (previewGridContainer == null) return;
 
-        // Tìm hoặc tạo 9 ô button xem trước
+        // Tìm hoặc tạo 9 ô button xem trước với góc bo mềm mại chuẩn Friendly Puzzle
         for (int i = 0; i < 9; i++)
         {
             Transform cell = previewGridContainer.Find($"Cell_{i}");
@@ -1241,7 +1326,18 @@ public class RubikCameraScanner : MonoBehaviour
                 cell = obj.transform;
             }
 
-            previewCellImages[i] = cell.GetComponent<Image>();
+            Image img = cell.GetComponent<Image>();
+            if (img != null)
+            {
+                img.sprite = RubikUISpriteFactory.GetRoundedSprite(8);
+                img.type = Image.Type.Sliced;
+            }
+            Outline outline = cell.GetComponent<Outline>();
+            if (outline == null) outline = cell.gameObject.AddComponent<Outline>();
+            outline.effectColor = new Color(0.06f, 0.09f, 0.16f, 0.16f);
+            outline.effectDistance = new Vector2(1.5f, -1.5f);
+
+            previewCellImages[i] = img;
             Button btn = cell.GetComponent<Button>();
 
             int cellIndex = i;
@@ -1264,6 +1360,11 @@ public class RubikCameraScanner : MonoBehaviour
             {
                 reticleTransforms[i] = box.GetComponent<RectTransform>();
                 reticleCellBorders[i] = box.GetComponent<Image>();
+                if (reticleCellBorders[i] != null && reticleCellBorders[i].sprite == null)
+                {
+                    reticleCellBorders[i].sprite = RubikUISpriteFactory.GetRoundedSprite(10, 4);
+                    reticleCellBorders[i].type = Image.Type.Sliced;
+                }
                 reticleLabels[i] = box.GetComponentInChildren<TextMeshProUGUI>(true);
             }
         }
@@ -1298,7 +1399,7 @@ public class RubikCameraScanner : MonoBehaviour
             previewCellImages[index].color = WcaReferenceColors.ContainsKey(nextColor) ? WcaReferenceColors[nextColor] : Color.white;
 
         UpdateFaceBadgesUI();
-        SetStatus($"Đã chỉnh ô {index + 1} sang màu '{nextColor}'", Color.white);
+        SetStatus($"Đã chỉnh ô {index + 1} sang màu '{nextColor}'", Color.cyan);
     }
 
     private char CycleNextColor(char c)
@@ -1323,6 +1424,19 @@ public class RubikCameraScanner : MonoBehaviour
             for (int i = 0; i < 9; i++) arr[i] = defaultCol;
             scannedFaces[faceCode] = arr;
         }
+    }
+
+    private static Transform FindDeepChild(Transform parent, string name)
+    {
+        if (parent == null) return null;
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            Transform child = parent.GetChild(i);
+            if (child.name == name) return child;
+            Transform found = FindDeepChild(child, name);
+            if (found != null) return found;
+        }
+        return null;
     }
 
     public void AutoBindReferences()
@@ -1352,159 +1466,157 @@ public class RubikCameraScanner : MonoBehaviour
         {
             if (cameraFeedImage == null)
             {
-                Transform t = scannerPanel.transform.Find("LeftContainer/CameraFeed");
+                Transform t = FindDeepChild(scannerPanel.transform, "CameraFeed");
                 if (t != null) cameraFeedImage = t.GetComponent<RawImage>();
             }
 
             if (reticleContainer == null)
             {
-                Transform t = scannerPanel.transform.Find("LeftContainer/CameraFeed/ReticleOverlay");
+                Transform t = FindDeepChild(scannerPanel.transform, "ReticleOverlay");
                 if (t != null) reticleContainer = t.GetComponent<RectTransform>();
             }
 
             if (faceTitleText == null)
             {
-                Transform t = scannerPanel.transform.Find("RightContainer/FaceTitleText");
+                Transform t = FindDeepChild(scannerPanel.transform, "FaceTitleText");
                 if (t != null) faceTitleText = t.GetComponent<TextMeshProUGUI>();
             }
 
             if (faceGuideText == null)
             {
-                Transform t = scannerPanel.transform.Find("RightContainer/FaceGuideText");
+                Transform t = FindDeepChild(scannerPanel.transform, "FaceGuideText");
                 if (t != null) faceGuideText = t.GetComponent<TextMeshProUGUI>();
             }
 
             if (statusText == null)
             {
-                Transform t = scannerPanel.transform.Find("RightContainer/StatusText");
+                Transform t = FindDeepChild(scannerPanel.transform, "StatusText");
                 if (t != null) statusText = t.GetComponent<TextMeshProUGUI>();
             }
 
             if (cameraInfoText == null)
             {
-                Transform t = scannerPanel.transform.Find("LeftContainer/CameraInfoText");
+                Transform t = FindDeepChild(scannerPanel.transform, "CameraInfoText");
                 if (t != null) cameraInfoText = t.GetComponent<TextMeshProUGUI>();
             }
 
             if (previewGridContainer == null)
             {
-                Transform t = scannerPanel.transform.Find("RightContainer/PreviewGridContainer");
+                Transform t = FindDeepChild(scannerPanel.transform, "PreviewGridContainer");
                 if (t != null) previewGridContainer = t;
             }
 
             if (faceBadgesContainer == null)
             {
-                Transform t = scannerPanel.transform.Find("RightContainer/FaceBadgesContainer");
+                Transform t = FindDeepChild(scannerPanel.transform, "FaceBadgesContainer");
                 if (t != null) faceBadgesContainer = t;
             }
 
             if (btnCaptureFace == null)
             {
-                Transform t = scannerPanel.transform.Find("RightContainer/BtnCaptureFace");
+                Transform t = FindDeepChild(scannerPanel.transform, "BtnCaptureFace");
                 if (t != null) btnCaptureFace = t.GetComponent<Button>();
             }
 
             if (btnRescanFace == null)
             {
-                Transform t = scannerPanel.transform.Find("RightContainer/BtnRescanFace");
+                Transform t = FindDeepChild(scannerPanel.transform, "BtnRescanFace");
                 if (t != null) btnRescanFace = t.GetComponent<Button>();
             }
 
             if (btnNextFace == null)
             {
-                Transform t = scannerPanel.transform.Find("RightContainer/NavRow/BtnNextFace");
+                Transform t = FindDeepChild(scannerPanel.transform, "BtnNextFace");
                 if (t != null) btnNextFace = t.GetComponent<Button>();
             }
 
             if (btnPrevFace == null)
             {
-                Transform t = scannerPanel.transform.Find("RightContainer/NavRow/BtnPrevFace");
+                Transform t = FindDeepChild(scannerPanel.transform, "BtnPrevFace");
                 if (t != null) btnPrevFace = t.GetComponent<Button>();
             }
 
             if (btnSwitchCamera == null)
             {
-                Transform t = scannerPanel.transform.Find("LeftContainer/BtnSwitchCamera");
+                Transform t = FindDeepChild(scannerPanel.transform, "BtnSwitchCamera");
                 if (t != null) btnSwitchCamera = t.GetComponent<Button>();
             }
 
             if (btnApplyToCube == null)
             {
-                Transform t = scannerPanel.transform.Find("RightContainer/BtnApplyToCube");
+                Transform t = FindDeepChild(scannerPanel.transform, "BtnApplyToCube");
                 if (t != null) btnApplyToCube = t.GetComponent<Button>();
             }
 
             if (btnClose == null)
             {
-                Transform t = scannerPanel.transform.Find("Header/BtnClose");
+                Transform t = FindDeepChild(scannerPanel.transform, "BtnClose");
                 if (t != null) btnClose = t.GetComponent<Button>();
             }
 
             if (toggleAutoCalibrate == null)
             {
-                Transform t = scannerPanel.transform.Find("RightContainer/ToggleAutoCalibrate");
+                Transform t = FindDeepChild(scannerPanel.transform, "ToggleAutoCalibrate");
                 if (t != null) toggleAutoCalibrate = t.GetComponent<Toggle>();
             }
 
             if (toggleCustomMaterialSync == null)
             {
-                Transform t = scannerPanel.transform.Find("RightContainer/ToggleCustomMaterialSync");
+                Transform t = FindDeepChild(scannerPanel.transform, "ToggleCustomMaterialSync");
                 if (t != null) toggleCustomMaterialSync = t.GetComponent<Toggle>();
             }
 
             if (sliderDistance == null)
             {
-                Transform t = scannerPanel.transform.Find("LeftContainer/SliderDistance");
+                Transform t = FindDeepChild(scannerPanel.transform, "SliderDistance");
                 if (t != null) sliderDistance = t.GetComponent<Slider>();
             }
 
             if (distanceLabelText == null)
             {
-                Transform t = scannerPanel.transform.Find("LeftContainer/DistanceLabelText");
+                Transform t = FindDeepChild(scannerPanel.transform, "DistanceLabelText");
                 if (t != null) distanceLabelText = t.GetComponent<TextMeshProUGUI>();
             }
 
             if (btnNudgeUp == null)
             {
-                Transform t = scannerPanel.transform.Find("LeftContainer/NudgeRow/BtnNudgeUp");
+                Transform t = FindDeepChild(scannerPanel.transform, "BtnNudgeUp");
                 if (t != null) btnNudgeUp = t.GetComponent<Button>();
             }
 
             if (btnNudgeDown == null)
             {
-                Transform t = scannerPanel.transform.Find("LeftContainer/NudgeRow/BtnNudgeDown");
+                Transform t = FindDeepChild(scannerPanel.transform, "BtnNudgeDown");
                 if (t != null) btnNudgeDown = t.GetComponent<Button>();
             }
 
             if (btnNudgeLeft == null)
             {
-                Transform t = scannerPanel.transform.Find("LeftContainer/NudgeRow/BtnNudgeLeft");
+                Transform t = FindDeepChild(scannerPanel.transform, "BtnNudgeLeft");
                 if (t != null) btnNudgeLeft = t.GetComponent<Button>();
             }
 
             if (btnNudgeRight == null)
             {
-                Transform t = scannerPanel.transform.Find("LeftContainer/NudgeRow/BtnNudgeRight");
+                Transform t = FindDeepChild(scannerPanel.transform, "BtnNudgeRight");
                 if (t != null) btnNudgeRight = t.GetComponent<Button>();
             }
 
             if (btnResetReticlePos == null)
             {
-                Transform t = scannerPanel.transform.Find("LeftContainer/NudgeRow/BtnResetReticlePos");
+                Transform t = FindDeepChild(scannerPanel.transform, "BtnResetReticlePos");
                 if (t != null) btnResetReticlePos = t.GetComponent<Button>();
             }
 
             if (btnFlipHorizontal == null)
             {
-                Transform t = scannerPanel.transform.Find("LeftContainer/CamControlsRow/BtnFlipHorizontal");
-                if (t == null) t = scannerPanel.transform.Find("LeftContainer/BtnFlipHorizontal");
+                Transform t = FindDeepChild(scannerPanel.transform, "BtnFlipHorizontal");
                 if (t != null) btnFlipHorizontal = t.GetComponent<Button>();
             }
 
             if (btnFlipVertical == null)
             {
-                Transform t = scannerPanel.transform.Find("LeftContainer/CamControlsRow/BtnFlipVertical");
-                if (t == null) t = scannerPanel.transform.Find("LeftContainer/BtnFlipVertical");
+                Transform t = FindDeepChild(scannerPanel.transform, "BtnFlipVertical");
                 if (t != null) btnFlipVertical = t.GetComponent<Button>();
             }
         }
@@ -1515,7 +1627,20 @@ public class RubikCameraScanner : MonoBehaviour
         if (statusText != null)
         {
             statusText.text = msg;
-            statusText.color = col;
+
+            // Chuẩn hóa màu chữ có độ tương phản cao trên nền sáng chuẩn Friendly Puzzle
+            if (col == Color.green)
+                statusText.color = new Color32(0x16, 0xA3, 0x4A, 255); // Xanh lá đậm #16A34A
+            else if (col == Color.red)
+                statusText.color = new Color32(0xDC, 0x26, 0x26, 255); // Đỏ đậm #DC2626
+            else if (col == Color.yellow)
+                statusText.color = new Color32(0xD9, 0x77, 0x06, 255); // Cam hổ phách #D97706
+            else if (col == Color.cyan || col == Color.white)
+                statusText.color = new Color32(0x02, 0x84, 0xC7, 255); // Xanh dương #0284C7
+            else if (col == Color.gray)
+                statusText.color = new Color32(0x64, 0x74, 0x8B, 255); // Xám Slate #64748B
+            else
+                statusText.color = col;
         }
     }
 }

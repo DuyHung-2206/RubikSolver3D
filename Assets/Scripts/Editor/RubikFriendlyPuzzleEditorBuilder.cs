@@ -15,6 +15,11 @@ public static class RubikFriendlyPuzzleEditorBuilder
 
     private static void AutoEnsureFriendlyPuzzleUIInEditor()
     {
+        if (EditorSettings.enterPlayModeOptionsEnabled)
+        {
+            EditorSettings.enterPlayModeOptionsEnabled = false;
+        }
+
         if (EditorApplication.isPlayingOrWillChangePlaymode)
             return;
 
@@ -35,19 +40,26 @@ public static class RubikFriendlyPuzzleEditorBuilder
         }
 
         Canvas canvas = Object.FindAnyObjectByType<Canvas>();
-        if (canvas != null && canvas.transform.Find("FriendlyPuzzleUI_v2") == null)
+        if (canvas != null && canvas.transform.Find("FriendlyPuzzleUI_v4") == null)
         {
             RubikFriendlyPuzzleUIBuilder.EnsureUI(uiCtrl, forceRebuild: true);
             EditorUtility.SetDirty(uiCtrl);
+            if (uiCtrl.cameraOrbit != null) EditorUtility.SetDirty(uiCtrl.cameraOrbit);
+            if (uiCtrl.cameraScanner != null) EditorUtility.SetDirty(uiCtrl.cameraScanner);
+            if (uiCtrl.colorPicker != null) EditorUtility.SetDirty(uiCtrl.colorPicker);
+            if (uiCtrl.solutionViewer != null) EditorUtility.SetDirty(uiCtrl.solutionViewer);
             if (canvas != null) EditorUtility.SetDirty(canvas.gameObject);
             EditorSceneManager.MarkSceneDirty(activeScene);
-            Debug.Log("<color=#2563EB><b>[RubikSolver3D] Đã tự động thiết lập giao diện Friendly Puzzle chuẩn 3 ảnh tham chiếu trên Scene!</b></color>");
+            EditorSceneManager.SaveOpenScenes();
+            Debug.Log("<color=#2563EB><b>[RubikSolver3D] Đã tự động nâng cấp giao diện Friendly Puzzle v4 (thêm SolverLoadingModal bất đồng bộ) trên Scene!</b></color>");
         }
     }
 
     [MenuItem("Rubik/Thiết kế Giao diện Friendly Puzzle (Chuẩn 3 Ảnh Tham Chiếu)", priority = 1)]
     public static void BuildFriendlyPuzzleUIMenu()
     {
+        EditorSettings.enterPlayModeOptionsEnabled = false;
+
         RubikUIController uiCtrl = Object.FindAnyObjectByType<RubikUIController>();
         if (uiCtrl == null)
         {
@@ -63,16 +75,19 @@ public static class RubikFriendlyPuzzleEditorBuilder
         }
 
         Undo.IncrementCurrentGroup();
-        Undo.SetCurrentGroupName("Build Friendly Puzzle UI");
+        Undo.SetCurrentGroupName("Build Friendly Puzzle UI v3");
 
         RubikFriendlyPuzzleUIBuilder.EnsureUI(uiCtrl, forceRebuild: true);
         EnsureMainSceneInBuildSettings();
 
         EditorUtility.SetDirty(uiCtrl);
+        if (uiCtrl.cameraOrbit != null) EditorUtility.SetDirty(uiCtrl.cameraOrbit);
+        if (uiCtrl.cameraScanner != null) EditorUtility.SetDirty(uiCtrl.cameraScanner);
+        if (uiCtrl.colorPicker != null) EditorUtility.SetDirty(uiCtrl.colorPicker);
         EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
         EditorSceneManager.SaveOpenScenes();
 
-        Debug.Log("<color=#16A34A><b>[RubikSolver3D] Hoàn tất dựng và lưu giao diện Friendly Puzzle chuẩn 3 ảnh tham chiếu!</b></color>");
+        Debug.Log("<color=#16A34A><b>[RubikSolver3D] Hoàn tất dựng và lưu giao diện Friendly Puzzle v3!</b></color>");
     }
 
     private static void EnsureMainSceneInBuildSettings()

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
@@ -23,8 +24,14 @@ public class RubikSolutionViewer : MonoBehaviour
     public Transform chipsContainer;         // Thanh chứa các nút Chip nước đi (R, U, R', U'...)
     public Button btnPrevStep;               // "< Trước"
     public Button btnNextStep;               // "Tiếp theo >"
-    public Button btnAutoSolve;              // "⚡ Giải tự động"
+    public Button btnAutoSolve;              // "Tự động"
     public Button btnCloseSolver;            // Nút "←" Quay lại
+
+    [Header("UI Thông Báo Loading Tìm Lời Giải")]
+    public GameObject loadingPanel;
+    public RectTransform loadingSpinner;
+    public TextMeshProUGUI loadingTitleText;
+    public TextMeshProUGUI loadingSubText;
 
     [Header("Dữ liệu bước giải")]
     public List<string> currentSolution = new List<string>();
@@ -33,6 +40,7 @@ public class RubikSolutionViewer : MonoBehaviour
     [Tooltip("Chỉ số bước đang được xem trước (Preview) khi người dùng nhấn vào từng Chip")]
     public int previewStepIndex = 0;
     public bool isAutoSolving = false;
+    public bool isCalculatingSolution = false;
 
     // Lưu trữ danh sách các Chip UI tái sử dụng để tối ưu hiệu năng (Zero GC / Destroy mỗi frame)
     private readonly List<ChipItemUI> chipPool = new List<ChipItemUI>();
@@ -59,6 +67,7 @@ public class RubikSolutionViewer : MonoBehaviour
     private void Start()
     {
         if (solverPanel != null) solverPanel.SetActive(false);
+        if (loadingPanel != null) loadingPanel.SetActive(false);
         BindButtons();
     }
 
@@ -96,7 +105,7 @@ public class RubikSolutionViewer : MonoBehaviour
 
     private void UpdateButtonsState()
     {
-        bool isBusy = rotator != null && rotator.IsBusy;
+        bool isBusy = (rotator != null && rotator.IsBusy) || isCalculatingSolution;
         int total = currentSolution != null ? currentSolution.Count : 0;
 
         if (total == 0)
@@ -130,10 +139,21 @@ public class RubikSolutionViewer : MonoBehaviour
 
     private void OpenSolutionInternal(bool autoStart)
     {
-        if (rotator != null && rotator.IsBusy) return;
+        if ((rotator != null && rotator.IsBusy) || isCalculatingSolution) return;
+
+        StopAllCoroutines();
+        StartCoroutine(SolveAndOpenCoroutine(autoStart));
+    }
+
+    private IEnumerator SolveAndOpenCoroutine(bool autoStart)
+    {
+        isCalculatingSolution = true;
+        isAutoSolving = false;
 
         if (solver == null)
             solver = FindAnyObjectByType<RubikSolver>();
+        if (stateManager == null)
+            stateManager = FindAnyObjectByType<RubikStateManager>();
         if (guideHighlighter == null)
         {
             guideHighlighter = GetComponent<RubikGuideHighlighter>();
@@ -141,7 +161,74 @@ public class RubikSolutionViewer : MonoBehaviour
                 guideHighlighter = rotator.gameObject.AddComponent<RubikGuideHighlighter>();
         }
 
-        currentSolution = solver != null ? solver.SolveCurrentState() : new List<string>();
+        // Ẩn khung hướng dẫn và mũi tên trong lúc hiển thị thông báo Loading
+        if (solverPanel != null) solverPanel.SetActive(false);
+        if (guideHighlighter != null) guideHighlighter.ClearHighlight();
+
+        // Đảm bảo hộp thoại Loading luôn sẵn sàng và hiển thị ngay lập tức
+        EnsureLoadingPanel();
+        if (loadingTitleText != null)
+            loadingTitleText.text = "Đang tìm hướng giải ngắn nhất...";
+        if (loadingSubText != null)
+            loadingSubText.text = "Đang phân tích 54 ô màu bằng thuật toán Kociemba 2-Phase";
+
+        if (loadingPanel != null)
+        {
+            loadingPanel.transform.SetAsLastSibling();
+            loadingPanel.SetActive(true);
+        }
+
+        // Nhường 1 frame để Unity vẽ ngay hộp thoại Loading lên màn hình trước khi chạy thuật toán
+        yield return null;
+
+        // Chụp bản sao trạng thái trên Main Thread để truyền sang Background Thread an toàn
+        RubikState stateSnapshot = (stateManager != null && stateManager.CurrentState != null)
+            ? stateManager.CurrentState.Clone()
+            : null;
+        List<string> historySnapshot = stateManager != null
+            ? stateManager.GetUndoMoveHistory()
+            : null;
+
+        string solveError = string.Empty;
+        RubikSolver solverRef = solver;
+
+        Task<List<string>> solveTask = Task.Run(() =>
+        {
+            if (solverRef == null)
+                return new List<string>();
+            return solverRef.SolveStateSnapshot(stateSnapshot, historySnapshot, out solveError);
+        });
+
+        // Duy trì hiển thị Loading tối thiểu 0.45s kèm vòng xoay mượt 60 FPS để trải nghiệm mượt mà, không giật cục
+        float minDisplaySeconds = 0.45f;
+        float elapsed = 0f;
+
+        while (!solveTask.IsCompleted || elapsed < minDisplaySeconds)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            if (loadingSpinner != null)
+            {
+                loadingSpinner.Rotate(0f, 0f, -320f * Time.unscaledDeltaTime);
+            }
+            yield return null;
+        }
+
+        if (loadingPanel != null)
+            loadingPanel.SetActive(false);
+
+        isCalculatingSolution = false;
+
+        if (solveTask.IsFaulted)
+        {
+            currentSolution = new List<string>();
+            if (solver != null && string.IsNullOrEmpty(solveError))
+                solveError = "Đã xảy ra lỗi khi tìm lời giải.";
+        }
+        else
+        {
+            currentSolution = solveTask.Result ?? new List<string>();
+        }
+
         currentStepIndex = 0;
         previewStepIndex = 0;
         isAutoSolving = false;
@@ -156,16 +243,18 @@ public class RubikSolutionViewer : MonoBehaviour
             if (stateManager != null && stateManager.IsSolved())
             {
                 if (stepInfoText != null) stepInfoText.text = "Hoàn thành";
-                if (moveBadgeText != null) moveBadgeText.text = "✓";
+                if (moveBadgeText != null) moveBadgeText.text = "OK";
                 if (moveTitleText != null) moveTitleText.text = "Khối Rubik đã hoàn thành!";
                 if (nextMoveText != null) nextMoveText.text = "Hãy nhấn 'Trộn khối' ở Trang chủ để tạo trạng thái mới và xem hướng dẫn từng bước.";
                 if (fullFormulaText != null) fullFormulaText.text = "6 mặt đã đồng màu hoàn hảo.";
             }
             else
             {
-                string error = (solver != null && !string.IsNullOrEmpty(solver.LastErrorMessage))
-                    ? solver.LastErrorMessage
-                    : "Không tìm thấy lời giải hợp lệ cho khối Rubik này!";
+                string error = !string.IsNullOrEmpty(solveError)
+                    ? solveError
+                    : ((solver != null && !string.IsNullOrEmpty(solver.LastErrorMessage))
+                        ? solver.LastErrorMessage
+                        : "Không tìm thấy lời giải hợp lệ cho khối Rubik này!");
 
                 if (stepInfoText != null) stepInfoText.text = "Lỗi trạng thái";
                 if (moveBadgeText != null) moveBadgeText.text = "!";
@@ -174,8 +263,10 @@ public class RubikSolutionViewer : MonoBehaviour
                 if (fullFormulaText != null) fullFormulaText.text = error;
             }
             UpdateButtonsState();
-            return;
+            yield break;
         }
+
+        Debug.Log($"<color=#16A34A>[RubikSolver] Đã tìm xong hướng giải ngắn nhất ({currentSolution.Count} bước): {string.Join(" ", currentSolution)}</color>");
 
         if (stateManager != null) stateManager.isExecutingUndoRedo = false;
 
@@ -186,6 +277,34 @@ public class RubikSolutionViewer : MonoBehaviour
         {
             StartCoroutine(AutoSolveCoroutine());
         }
+    }
+
+    /// <summary>
+    /// Tự động liên kết hoặc khởi tạo bảng thông báo Loading nếu chưa có sẵn trong Scene.
+    /// </summary>
+    public void EnsureLoadingPanel()
+    {
+        if (loadingPanel != null && loadingSpinner != null && loadingTitleText != null)
+            return;
+
+        Canvas canvas = FindAnyObjectByType<Canvas>();
+        if (canvas == null) return;
+
+        Transform existing = canvas.transform.Find("SolverLoadingModal");
+        if (existing != null)
+        {
+            loadingPanel = existing.gameObject;
+            Transform spinnerTr = existing.Find("Card/SpinnerBadge/LoadingSpinner");
+            if (spinnerTr != null) loadingSpinner = spinnerTr.GetComponent<RectTransform>();
+            Transform titleTr = existing.Find("Card/LoadingTitleText");
+            if (titleTr != null) loadingTitleText = titleTr.GetComponent<TextMeshProUGUI>();
+            Transform subTr = existing.Find("Card/LoadingSubText");
+            if (subTr != null) loadingSubText = subTr.GetComponent<TextMeshProUGUI>();
+            return;
+        }
+
+        var uiCtrl = FindAnyObjectByType<RubikUIController>();
+        RubikFriendlyPuzzleUIBuilder.BuildSolverLoadingModal(canvas.transform, uiCtrl, this);
     }
 
     /// <summary>
@@ -297,8 +416,12 @@ public class RubikSolutionViewer : MonoBehaviour
     public void CloseViewer()
     {
         isAutoSolving = false;
+        isCalculatingSolution = false;
         if (stateManager != null) stateManager.isExecutingUndoRedo = false;
         StopAllCoroutines();
+
+        if (loadingPanel != null)
+            loadingPanel.SetActive(false);
 
         if (guideHighlighter != null)
             guideHighlighter.ClearHighlight();
@@ -441,8 +564,8 @@ public class RubikSolutionViewer : MonoBehaviour
         // 2. Thẻ hướng dẫn nền xanh nhạt (Ký hiệu lớn, Tiêu đề mặt, Mô tả chiều xoay)
         if (isCompleted)
         {
-            if (moveBadgeText != null) moveBadgeText.text = "✓";
-            if (moveTitleText != null) moveTitleText.text = "🎉 Đã hoàn tất giải khối Rubik!";
+            if (moveBadgeText != null) moveBadgeText.text = "OK";
+            if (moveTitleText != null) moveTitleText.text = "Đã hoàn tất giải khối Rubik!";
             if (nextMoveText != null) nextMoveText.text = "Toàn bộ 6 mặt đã đồng màu hoàn hảo.";
             if (guideHighlighter != null) guideHighlighter.ClearHighlight();
         }
@@ -518,7 +641,7 @@ public class RubikSolutionViewer : MonoBehaviour
         if (btnAutoSolve != null)
         {
             var textTMP = btnAutoSolve.GetComponentInChildren<TextMeshProUGUI>();
-            if (textTMP != null) textTMP.text = isAutoSolving ? "Tạm dừng" : "⚡ Tự động";
+            if (textTMP != null) textTMP.text = isAutoSolving ? "Tạm dừng" : "Tự động";
         }
     }
 

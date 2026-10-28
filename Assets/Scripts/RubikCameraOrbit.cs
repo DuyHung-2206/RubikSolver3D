@@ -11,14 +11,14 @@ public class RubikCameraOrbit : MonoBehaviour
     [Header("Tốc độ & Độ nhạy")]
     public float xSpeed = 15.0f;
     public float ySpeed = 15.0f;
-    public float zoomSpeed = 0.01f;
+    public float zoomSpeed = 0.65f;
 
     [Header("Giới hạn góc xoay")]
     public float yMinLimit = -80f;
     public float yMaxLimit = 80f;
 
     [Header("Giới hạn Zoom")]
-    public float minDistance = 4.2f;
+    public float minDistance = 4.5f;
     public float maxDistance = 14.0f;
 
     [Header("Căn chỉnh khung nhìn 3D")]
@@ -35,16 +35,58 @@ public class RubikCameraOrbit : MonoBehaviour
     private float y = DefaultY;
     private Coroutine orbitTourCoroutine;
 
-    void Start()
+    // Theo dõi tọa độ chuột trực tiếp mỗi frame để đảm bảo xoay mượt 100% trên mọi chuột & touchpad Windows 11
+    private bool isRightOrMiddleOrbiting = false;
+    private bool isLeftEmptySpaceOrbiting = false;
+    private Vector2 lastPointerPos;
+    private RubikUIController cachedUIController;
+
+    private void Awake()
     {
-        if (target == null)
-        {
-            GameObject obj = GameObject.Find("RubikManager");
-            if (obj != null) target = obj.transform;
-        }
+        InitializeOrbitState();
+    }
+
+    private void OnEnable()
+    {
+        InitializeOrbitState();
+    }
+
+    private void Start()
+    {
+        InitializeOrbitState();
+    }
+
+    private void InitializeOrbitState()
+    {
+        EnsureTarget();
+
+        if (minDistance < 4.2f) minDistance = 4.5f;
+        if (maxDistance < 10.0f) maxDistance = 14.0f;
+        if (xSpeed <= 1f) xSpeed = 15.0f;
+        if (ySpeed <= 1f) ySpeed = 15.0f;
+
+        distance = Mathf.Clamp(distance, minDistance, maxDistance);
 
         ApplyFriendlyLightBackground();
         UpdateCameraTransform();
+    }
+
+    private void EnsureTarget()
+    {
+        if (target != null) return;
+
+        GameObject obj = GameObject.Find("RubikManager");
+        if (obj != null)
+        {
+            target = obj.transform;
+            return;
+        }
+
+        RubikGenerator gen = FindAnyObjectByType<RubikGenerator>();
+        if (gen != null)
+        {
+            target = gen.transform;
+        }
     }
 
     public void ApplyFriendlyLightBackground()
@@ -58,36 +100,136 @@ public class RubikCameraOrbit : MonoBehaviour
         }
     }
 
-    void LateUpdate()
+    private bool IsAnyBlockingModalOpen()
     {
+        if (cachedUIController == null)
+            cachedUIController = FindAnyObjectByType<RubikUIController>();
+
+        if (cachedUIController != null)
+        {
+            if (cachedUIController.cameraScanner != null && cachedUIController.cameraScanner.scannerPanel != null && cachedUIController.cameraScanner.scannerPanel.activeInHierarchy)
+                return true;
+            if (cachedUIController.colorPicker != null && cachedUIController.colorPicker.netPanel != null && cachedUIController.colorPicker.netPanel.activeInHierarchy)
+                return true;
+            if (cachedUIController.algorithmInput != null && cachedUIController.algorithmInput.inputPanel != null && cachedUIController.algorithmInput.inputPanel.activeInHierarchy)
+                return true;
+            if (cachedUIController.settingsPanel != null && cachedUIController.settingsPanel.activeInHierarchy)
+                return true;
+            if (cachedUIController.confirmResetPanel != null && cachedUIController.confirmResetPanel.activeInHierarchy)
+                return true;
+            if (cachedUIController.victoryPanel != null && cachedUIController.victoryPanel.activeInHierarchy)
+                return true;
+        }
+
+        return false;
+    }
+
+    private void Update()
+    {
+        EnsureTarget();
         if (target == null) return;
+
+        if (IsAnyBlockingModalOpen())
+        {
+            isRightOrMiddleOrbiting = false;
+            isLeftEmptySpaceOrbiting = false;
+            return;
+        }
 
         bool pointerOverUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
 
         if (Mouse.current != null)
         {
-            // CHỈ XOAY CAMERA KHI GIỮ CHUỘT PHẢI (Để dành chuột trái cho việc kéo Rubik và bấm UI)
-            if (Mouse.current.rightButton.isPressed)
+            Vector2 currentPos = Mouse.current.position.ReadValue();
+            bool rightOrMiddleHeld = Mouse.current.rightButton.isPressed || Mouse.current.middleButton.isPressed;
+
+            // 1. GIỮ CHUỘT PHẢI (HOẶC CHUỘT GIỮA): Xoay góc nhìn Rubik 3D ở bất kỳ đâu trên màn hình
+            if (rightOrMiddleHeld)
             {
-                StopOrbitTourIfRunning();
-                Vector2 delta = Mouse.current.delta.ReadValue();
-                x += delta.x * xSpeed * 0.02f;
-                y -= delta.y * ySpeed * 0.02f;
-                y = Mathf.Clamp(y, yMinLimit, yMaxLimit);
+                if (!isRightOrMiddleOrbiting)
+                {
+                    isRightOrMiddleOrbiting = true;
+                    lastPointerPos = currentPos;
+                }
+                else
+                {
+                    Vector2 posDelta = currentPos - lastPointerPos;
+                    lastPointerPos = currentPos;
+
+                    if (posDelta.sqrMagnitude < 0.0001f)
+                        posDelta = Mouse.current.delta.ReadValue();
+
+                    if (posDelta.sqrMagnitude > 0.0001f)
+                    {
+                        StopOrbitTourIfRunning();
+                        x += posDelta.x * xSpeed * 0.022f;
+                        y -= posDelta.y * ySpeed * 0.022f;
+                        y = Mathf.Clamp(y, yMinLimit, yMaxLimit);
+                    }
+                }
+            }
+            else
+            {
+                isRightOrMiddleOrbiting = false;
             }
 
-            // Thu phóng bằng con lăn chuột (khi không cuộn trên bảng UI)
+            // 2. GIỮ CHUỘT TRÁI TRÊN VÙNG TRỐNG NGOÀI KHỐI RUBIK: Cũng hỗ trợ xoay góc nhìn Camera tiện lợi
+            if (!rightOrMiddleHeld)
+            {
+                if (Mouse.current.leftButton.wasPressedThisFrame && !pointerOverUI)
+                {
+                    Camera cam = GetComponent<Camera>();
+                    if (cam == null) cam = Camera.main;
+                    bool hitCube = false;
+                    if (cam != null)
+                    {
+                        Ray ray = cam.ScreenPointToRay(currentPos);
+                        hitCube = Physics.Raycast(ray, 100f);
+                    }
+
+                    if (!hitCube)
+                    {
+                        isLeftEmptySpaceOrbiting = true;
+                        lastPointerPos = currentPos;
+                    }
+                }
+
+                if (isLeftEmptySpaceOrbiting && Mouse.current.leftButton.isPressed)
+                {
+                    Vector2 posDelta = currentPos - lastPointerPos;
+                    lastPointerPos = currentPos;
+
+                    if (posDelta.sqrMagnitude < 0.0001f)
+                        posDelta = Mouse.current.delta.ReadValue();
+
+                    if (posDelta.sqrMagnitude > 0.0001f)
+                    {
+                        StopOrbitTourIfRunning();
+                        x += posDelta.x * xSpeed * 0.022f;
+                        y -= posDelta.y * ySpeed * 0.022f;
+                        y = Mathf.Clamp(y, yMinLimit, yMaxLimit);
+                    }
+                }
+                else if (!Mouse.current.leftButton.isPressed)
+                {
+                    isLeftEmptySpaceOrbiting = false;
+                }
+            }
+
+            // 3. THU PHÓNG BẰNG CON LĂN CHUỘT (Chuẩn hóa bước cuộn để không bị phóng đại đột ngột)
             if (!pointerOverUI)
             {
                 float scroll = Mouse.current.scroll.ReadValue().y;
                 if (Mathf.Abs(scroll) > 0.01f)
                 {
-                    distance = Mathf.Clamp(distance - scroll * zoomSpeed, minDistance, maxDistance);
+                    StopOrbitTourIfRunning();
+                    float step = Mathf.Sign(scroll) * 0.55f;
+                    distance = Mathf.Clamp(distance - step, minDistance, maxDistance);
                 }
             }
         }
 
-        // Hỗ trợ xoay camera bằng 2 ngón tay trên màn hình cảm ứng điện thoại
+        // 4. Hỗ trợ xoay camera bằng 2 ngón tay trên màn hình cảm ứng điện thoại
         if (Touchscreen.current != null && Touchscreen.current.touches.Count >= 2 && !pointerOverUI)
         {
             var t0 = Touchscreen.current.touches[0];
@@ -96,12 +238,17 @@ public class RubikCameraOrbit : MonoBehaviour
             {
                 StopOrbitTourIfRunning();
                 Vector2 avgDelta = (t0.delta.ReadValue() + t1.delta.ReadValue()) * 0.5f;
-                x += avgDelta.x * xSpeed * 0.015f;
-                y -= avgDelta.y * ySpeed * 0.015f;
+                x += avgDelta.x * xSpeed * 0.018f;
+                y -= avgDelta.y * ySpeed * 0.018f;
                 y = Mathf.Clamp(y, yMinLimit, yMaxLimit);
             }
         }
+    }
 
+    private void LateUpdate()
+    {
+        EnsureTarget();
+        if (target == null) return;
         UpdateCameraTransform();
     }
 
@@ -132,7 +279,7 @@ public class RubikCameraOrbit : MonoBehaviour
     public void ZoomIn()
     {
         StopOrbitTourIfRunning();
-        distance = Mathf.Clamp(distance - 0.9f, minDistance, maxDistance);
+        distance = Mathf.Clamp(distance - 0.8f, minDistance, maxDistance);
         UpdateCameraTransform();
     }
 
@@ -142,7 +289,7 @@ public class RubikCameraOrbit : MonoBehaviour
     public void ZoomOut()
     {
         StopOrbitTourIfRunning();
-        distance = Mathf.Clamp(distance + 0.9f, minDistance, maxDistance);
+        distance = Mathf.Clamp(distance + 0.8f, minDistance, maxDistance);
         UpdateCameraTransform();
     }
 
