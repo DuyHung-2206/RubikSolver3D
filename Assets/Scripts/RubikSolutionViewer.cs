@@ -487,7 +487,7 @@ public class RubikSolutionViewer : MonoBehaviour
         pillRT.anchoredPosition = new Vector2(0, -2);
 
         Image pillBg = pillObj.GetComponent<Image>();
-        pillBg.sprite = RubikUISpriteFactory.GetRoundedSprite(14);
+        pillBg.sprite = RubikUISpriteFactory.GetRoundedSprite(RubikUITheme.RadiusMd);
         pillBg.type = Image.Type.Sliced;
 
         // Viền mảnh cho Chip không chọn
@@ -498,7 +498,7 @@ public class RubikSolutionViewer : MonoBehaviour
         borderRT.anchorMax = Vector2.one;
         borderRT.sizeDelta = Vector2.zero;
         Image borderImg = borderObj.GetComponent<Image>();
-        borderImg.sprite = RubikUISpriteFactory.GetRoundedSprite(14, 2);
+        borderImg.sprite = RubikUISpriteFactory.GetRoundedSprite(RubikUITheme.RadiusMd, 2);
         borderImg.type = Image.Type.Sliced;
         borderImg.raycastTarget = false;
 
@@ -587,10 +587,10 @@ public class RubikSolutionViewer : MonoBehaviour
         }
 
         // 3. Cập nhật trạng thái màu sắc của các Chip nước đi
-        Color32 activeBlue = new Color32(0x1D, 0x6F, 0xF2, 255);
-        Color32 doneBlueLight = new Color32(0xE0, 0xF2, 0xFE, 255);
-        Color32 borderGray = new Color32(0xCB, 0xD5, 0xE1, 255);
-        Color32 textDark = new Color32(0x1E, 0x29, 0x3B, 255);
+        Color32 activeBlue = RubikUITheme.BrandBlue;
+        Color32 doneBlueLight = RubikUITheme.Sky100;
+        Color32 borderGray = RubikUITheme.Slate300;
+        Color32 textDark = RubikUITheme.Slate800;
         Color32 dotGray = new Color32(0xD1, 0xD5, 0xDB, 255);
 
         for (int i = 0; i < total && i < chipPool.Count; i++)
@@ -609,9 +609,9 @@ public class RubikSolutionViewer : MonoBehaviour
             else if (isDone)
             {
                 chip.pillBg.color = doneBlueLight;
-                chip.pillBorder.color = new Color32(0x93, 0xC5, 0xFD, 255);
-                chip.label.color = new Color32(0x1D, 0x4E, 0xD8, 255);
-                chip.dotImage.color = new Color32(0x60, 0xA5, 0xFA, 255);
+                chip.pillBorder.color = RubikUITheme.Blue300;
+                chip.label.color = RubikUITheme.Blue700;
+                chip.dotImage.color = RubikUITheme.Blue400;
             }
             else
             {

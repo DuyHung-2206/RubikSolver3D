@@ -207,10 +207,10 @@ public class SpeedcubingTimer : MonoBehaviour
         switch (currentState)
         {
             case TimerState.Holding: return new Color32(0xEA, 0x58, 0x0C, 255);  // Cam đậm
-            case TimerState.Ready: return new Color32(0x16, 0xA3, 0x4A, 255);    // Xanh lá
-            case TimerState.Running: return new Color32(0x25, 0x63, 0xEB, 255);  // Xanh dương
-            case TimerState.Finished: return isNewRecord ? new Color32(0xD9, 0x77, 0x06, 255) : new Color32(0x0D, 0x94, 0x88, 255);
-            default: return new Color32(0x47, 0x55, 0x69, 255);                  // Xám Slate
+            case TimerState.Ready: return RubikUITheme.Success;    // Xanh lá
+            case TimerState.Running: return RubikUITheme.Blue600;  // Xanh dương
+            case TimerState.Finished: return isNewRecord ? RubikUITheme.Warning : new Color32(0x0D, 0x94, 0x88, 255);
+            default: return RubikUITheme.Slate600;                  // Xám Slate
         }
     }
 

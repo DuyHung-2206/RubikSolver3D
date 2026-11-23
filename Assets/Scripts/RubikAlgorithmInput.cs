@@ -524,14 +524,14 @@ public class RubikAlgorithmInput : MonoBehaviour
 
         if (rotator != null && rotator.IsBusy)
         {
-            SetStatus("Khối Rubik đang bận xoay, vui lòng chờ!", new Color32(0xD9, 0x77, 0x06, 255));
+            SetStatus("Khối Rubik đang bận xoay, vui lòng chờ!", RubikUITheme.Warning);
             return;
         }
 
         string rawInput = FormulaText;
         if (string.IsNullOrWhiteSpace(rawInput))
         {
-            SetStatus("Vui lòng nhập công thức trước!", new Color32(0xD9, 0x77, 0x06, 255));
+            SetStatus("Vui lòng nhập công thức trước!", RubikUITheme.Warning);
             return;
         }
 
@@ -539,11 +539,11 @@ public class RubikAlgorithmInput : MonoBehaviour
         {
             if (rotator == null)
             {
-                SetStatus("Không tìm thấy RubikRotator trên Scene!", new Color32(0xDC, 0x26, 0x26, 255));
+                SetStatus("Không tìm thấy RubikRotator trên Scene!", RubikUITheme.Danger);
                 return;
             }
 
-            SetStatus($"Đang chạy mượt {moves.Count} nước đi: {string.Join(" ", moves)}", new Color32(0x16, 0xA3, 0x4A, 255));
+            SetStatus($"Đang chạy mượt {moves.Count} nước đi: {string.Join(" ", moves)}", RubikUITheme.Success);
 
             foreach (string move in moves)
             {
@@ -555,7 +555,7 @@ public class RubikAlgorithmInput : MonoBehaviour
         }
         else
         {
-            SetStatus("⚠ " + error, new Color32(0xDC, 0x26, 0x26, 255));
+            SetStatus("⚠ " + error, RubikUITheme.Danger);
         }
     }
 
@@ -569,14 +569,14 @@ public class RubikAlgorithmInput : MonoBehaviour
 
         if (rotator != null && rotator.IsBusy)
         {
-            SetStatus("Khối Rubik đang bận xoay, vui lòng chờ!", new Color32(0xD9, 0x77, 0x06, 255));
+            SetStatus("Khối Rubik đang bận xoay, vui lòng chờ!", RubikUITheme.Warning);
             return;
         }
 
         string rawInput = FormulaText;
         if (string.IsNullOrWhiteSpace(rawInput))
         {
-            SetStatus("Vui lòng nhập công thức trước!", new Color32(0xD9, 0x77, 0x06, 255));
+            SetStatus("Vui lòng nhập công thức trước!", RubikUITheme.Warning);
             return;
         }
 
@@ -584,7 +584,7 @@ public class RubikAlgorithmInput : MonoBehaviour
         {
             if (rotator == null)
             {
-                SetStatus("Không tìm thấy RubikRotator trên Scene!", new Color32(0xDC, 0x26, 0x26, 255));
+                SetStatus("Không tìm thấy RubikRotator trên Scene!", RubikUITheme.Danger);
                 return;
             }
 
@@ -593,18 +593,18 @@ public class RubikAlgorithmInput : MonoBehaviour
                 rotator.ExecuteMoveInstant(move);
             }
 
-            SetStatus($"✔ Đã áp dụng tức thì {moves.Count} nước đi!", new Color32(0x16, 0xA3, 0x4A, 255));
+            SetStatus($"✔ Đã áp dụng tức thì {moves.Count} nước đi!", RubikUITheme.Success);
         }
         else
         {
-            SetStatus("⚠ " + error, new Color32(0xDC, 0x26, 0x26, 255));
+            SetStatus("⚠ " + error, RubikUITheme.Danger);
         }
     }
 
     public void ClearInput()
     {
         FormulaText = "";
-        SetStatus("Đã xóa nội dung ô nhập.", new Color32(0x64, 0x74, 0x8B, 255));
+        SetStatus("Đã xóa nội dung ô nhập.", RubikUITheme.Slate500);
     }
 
     public void PasteFromClipboard()
@@ -613,11 +613,11 @@ public class RubikAlgorithmInput : MonoBehaviour
         if (!string.IsNullOrEmpty(clip))
         {
             FormulaText = clip;
-            SetStatus("✔ Đã dán công thức từ bộ nhớ tạm!", new Color32(0x25, 0x63, 0xEB, 255));
+            SetStatus("✔ Đã dán công thức từ bộ nhớ tạm!", RubikUITheme.Blue600);
         }
         else
         {
-            SetStatus("Bộ nhớ tạm đang trống!", new Color32(0xD9, 0x77, 0x06, 255));
+            SetStatus("Bộ nhớ tạm đang trống!", RubikUITheme.Warning);
         }
     }
 
@@ -627,11 +627,11 @@ public class RubikAlgorithmInput : MonoBehaviour
         if (!string.IsNullOrEmpty(text))
         {
             GUIUtility.systemCopyBuffer = text;
-            SetStatus("✔ Đã sao chép công thức vào bộ nhớ tạm!", new Color32(0x25, 0x63, 0xEB, 255));
+            SetStatus("✔ Đã sao chép công thức vào bộ nhớ tạm!", RubikUITheme.Blue600);
         }
         else
         {
-            SetStatus("Ô nhập đang trống, không có gì để sao chép!", new Color32(0xD9, 0x77, 0x06, 255));
+            SetStatus("Ô nhập đang trống, không có gì để sao chép!", RubikUITheme.Warning);
         }
     }
 

@@ -39,15 +39,7 @@ public class RubikDragController : MonoBehaviour
         bool pointerUp = false;
         Vector2 pointerPos = Vector2.zero;
 
-        if (Mouse.current != null)
-        {
-            pointerDown = Mouse.current.leftButton.wasPressedThisFrame;
-            pointerHeld = Mouse.current.leftButton.isPressed;
-            pointerUp = Mouse.current.leftButton.wasReleasedThisFrame;
-            pointerPos = Mouse.current.position.ReadValue();
-        }
-
-        if (!pointerDown && !pointerHeld && !pointerUp && Touchscreen.current != null && Touchscreen.current.touches.Count == 1)
+        if (Touchscreen.current != null && Touchscreen.current.touches.Count > 0)
         {
             var touch = Touchscreen.current.primaryTouch;
             pointerDown = touch.press.wasPressedThisFrame;
@@ -55,12 +47,18 @@ public class RubikDragController : MonoBehaviour
             pointerUp = touch.press.wasReleasedThisFrame;
             pointerPos = touch.position.ReadValue();
         }
+        else if (Mouse.current != null)
+        {
+            pointerDown = Mouse.current.leftButton.wasPressedThisFrame;
+            pointerHeld = Mouse.current.leftButton.isPressed;
+            pointerUp = Mouse.current.leftButton.wasReleasedThisFrame;
+            pointerPos = Mouse.current.position.ReadValue();
+        }
 
         if (pointerDown)
         {
-            // Bỏ qua nếu nhấp chuột trên các nút hoặc bảng giao diện UI
-            if (UnityEngine.EventSystems.EventSystem.current != null &&
-                UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
+            // Bỏ qua nếu nhấp chuột hoặc chạm trên các nút hoặc bảng giao diện UI
+            if (IsPointerOverUI())
             {
                 isDragging = false;
                 return;
@@ -87,8 +85,9 @@ public class RubikDragController : MonoBehaviour
         if (isDragging && pointerHeld)
         {
             Vector2 dragDelta = pointerPos - dragStartPos;
+            float effectiveThreshold = Screen.dpi > 0 ? Mathf.Max(dragThreshold, Screen.dpi * 0.12f) : dragThreshold;
 
-            if (dragDelta.magnitude >= dragThreshold)
+            if (dragDelta.magnitude >= effectiveThreshold)
             {
                 ResolveAndExecuteDrag(dragDelta);
                 isDragging = false; // Đã kích hoạt 1 lần, kết thúc lượt kéo
@@ -100,6 +99,27 @@ public class RubikDragController : MonoBehaviour
         {
             isDragging = false;
         }
+    }
+
+    private bool IsPointerOverUI()
+    {
+        if (UnityEngine.EventSystems.EventSystem.current == null) return false;
+        if (UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) return true;
+
+        if (Touchscreen.current != null)
+        {
+            for (int i = 0; i < Touchscreen.current.touches.Count; i++)
+            {
+                var touch = Touchscreen.current.touches[i];
+                if (touch.press.isPressed)
+                {
+                    int touchId = touch.touchId.ReadValue();
+                    if (UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject(touchId))
+                        return true;
+                }
+            }
+        }
+        return false;
     }
 
     /// <summary>

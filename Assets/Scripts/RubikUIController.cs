@@ -315,14 +315,14 @@ public class RubikUIController : MonoBehaviour
         if (shiftBadgeBg != null)
         {
             shiftBadgeBg.color = effectivePrime
-                ? new Color32(0x25, 0x63, 0xEB, 255)
-                : new Color32(0xE2, 0xE8, 0xF0, 255);
+                ? RubikUITheme.Blue600
+                : RubikUITheme.Slate200;
         }
         if (shiftBadgeText != null)
         {
             shiftBadgeText.color = effectivePrime
                 ? Color.white
-                : new Color32(0x47, 0x55, 0x69, 255);
+                : RubikUITheme.Slate600;
         }
 
         string s = effectivePrime ? "'" : "";
@@ -379,7 +379,7 @@ public class RubikUIController : MonoBehaviour
                 break;
 
             case NavTab.Camera:
-                SetMainWorkspacePanelsVisible(true);
+                SetMainWorkspacePanelsVisible(false);
                 if (cameraScanner != null)
                     cameraScanner.OpenScanner();
                 break;
@@ -392,14 +392,14 @@ public class RubikUIController : MonoBehaviour
                 break;
 
             case NavTab.Settings:
-                SetMainWorkspacePanelsVisible(true);
+                SetMainWorkspacePanelsVisible(false);
                 SyncSettingsUI();
                 if (settingsPanel != null)
                     settingsPanel.SetActive(true);
                 break;
 
             case NavTab.Color2D:
-                SetMainWorkspacePanelsVisible(true);
+                SetMainWorkspacePanelsVisible(false);
                 if (colorPicker != null)
                 {
                     if (colorPicker.netPanel != null && !colorPicker.netPanel.activeSelf)
@@ -410,6 +410,11 @@ public class RubikUIController : MonoBehaviour
     }
 
     public void OnGuideClosed()
+    {
+        OnModalClosed();
+    }
+
+    public void OnModalClosed()
     {
         SetMainWorkspacePanelsVisible(true);
         currentTab = NavTab.Home;
@@ -466,7 +471,7 @@ public class RubikUIController : MonoBehaviour
         if (bg != null)
         {
             bg.color = isSelected
-                ? new Color32(0x3B, 0x82, 0xF6, 255) // Xanh dương chuẩn ảnh tham chiếu #3B82F6
+                ? RubikUITheme.Blue500 // Xanh dương chuẩn ảnh tham chiếu #3B82F6
                 : new Color32(0xFF, 0xFF, 0xFF, 0);  // Trong suốt trên nền trắng
         }
 
@@ -478,7 +483,7 @@ public class RubikUIController : MonoBehaviour
             {
                 iconImg.color = isSelected
                     ? Color.white
-                    : new Color32(0x64, 0x74, 0x8B, 255); // Icon xám #64748B
+                    : RubikUITheme.Slate500; // Icon xám #64748B
             }
         }
 
@@ -487,7 +492,7 @@ public class RubikUIController : MonoBehaviour
         {
             label.color = isSelected
                 ? Color.white
-                : new Color32(0x33, 0x41, 0x55, 255); // Chữ xám đậm #334155
+                : RubikUITheme.Slate700; // Chữ xám đậm #334155
             label.fontStyle = isSelected ? FontStyles.Bold : FontStyles.Normal;
         }
     }

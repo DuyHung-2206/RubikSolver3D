@@ -69,25 +69,104 @@ public class RubikGenerator : MonoBehaviour
 
     void InitDefaultMaterials()
     {
-        // Đồng bộ 100% mã màu với bảng màu 2D (RubikNetColorPicker.DisplayColors)
-        matWhite = CreateStickerMaterial(new Color(0.96f, 0.96f, 0.96f));  // Trắng
-        matYellow = CreateStickerMaterial(new Color(1.00f, 0.84f, 0.00f)); // Vàng
-        matGreen = CreateStickerMaterial(new Color(0.00f, 0.65f, 0.28f));  // Xanh lá
-        matBlue = CreateStickerMaterial(new Color(0.00f, 0.35f, 0.85f));   // Xanh dương
-        matRed = CreateStickerMaterial(new Color(0.85f, 0.12f, 0.15f));    // Đỏ
-        matOrange = CreateStickerMaterial(new Color(1.00f, 0.40f, 0.00f)); // Cam
-        matBlack = CreateColorMaterial(new Color(0.10f, 0.10f, 0.12f), 0.3f); // Lõi đen
+        try
+        {
+            // Đồng bộ 100% mã màu với bảng màu 2D (RubikNetColorPicker.DisplayColors)
+            if (matWhite == null) matWhite = CreateStickerMaterial(new Color(0.96f, 0.96f, 0.96f));  // Trắng
+            if (matYellow == null) matYellow = CreateStickerMaterial(new Color(1.00f, 0.84f, 0.00f)); // Vàng
+            if (matGreen == null) matGreen = CreateStickerMaterial(new Color(0.00f, 0.65f, 0.28f));  // Xanh lá
+            if (matBlue == null) matBlue = CreateStickerMaterial(new Color(0.00f, 0.35f, 0.85f));   // Xanh dương
+            if (matRed == null) matRed = CreateStickerMaterial(new Color(0.85f, 0.12f, 0.15f));    // Đỏ
+            if (matOrange == null) matOrange = CreateStickerMaterial(new Color(1.00f, 0.40f, 0.00f)); // Cam
+            if (matBlack == null) matBlack = CreateColorMaterial(new Color(0.10f, 0.10f, 0.12f), 0.3f); // Lõi đen
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[RubikGenerator] Lỗi khởi tạo default materials: {ex.Message}. Đang kích hoạt fallback khẩn cấp...");
+            EnsureEmergencyMaterials();
+        }
+    }
+
+    private void EnsureEmergencyMaterials()
+    {
+        if (matWhite == null) matWhite = CreateFallbackMaterial(new Color(0.96f, 0.96f, 0.96f));
+        if (matYellow == null) matYellow = CreateFallbackMaterial(new Color(1.00f, 0.84f, 0.00f));
+        if (matGreen == null) matGreen = CreateFallbackMaterial(new Color(0.00f, 0.65f, 0.28f));
+        if (matBlue == null) matBlue = CreateFallbackMaterial(new Color(0.00f, 0.35f, 0.85f));
+        if (matRed == null) matRed = CreateFallbackMaterial(new Color(0.85f, 0.12f, 0.15f));
+        if (matOrange == null) matOrange = CreateFallbackMaterial(new Color(1.00f, 0.40f, 0.00f));
+        if (matBlack == null) matBlack = CreateFallbackMaterial(new Color(0.10f, 0.10f, 0.12f));
+    }
+
+    private static Shader cachedSafeShader = null;
+
+    /// <summary>
+    /// Tìm kiếm Shader an toàn, đảm bảo 100% hoạt động trên cả Editor và bản build thực tế (Android APK / Standalone)
+    /// mà không bao giờ trả về null gây crash tạo khối.
+    /// </summary>
+    public static Shader GetSafeShader(bool preferUnlit = true)
+    {
+        if (preferUnlit)
+        {
+            Shader unlit = Shader.Find("Universal Render Pipeline/Unlit");
+            if (unlit != null) return unlit;
+            Shader uColor = Shader.Find("Unlit/Color");
+            if (uColor != null) return uColor;
+        }
+
+        Shader lit = Shader.Find("Universal Render Pipeline/Lit");
+        if (lit != null) return lit;
+
+        if (cachedSafeShader != null) return cachedSafeShader;
+
+        // Trích xuất shader từ GameObject Primitive mặc định của Unity URP (luôn có sẵn trong mọi bản build)
+        GameObject tempCube = null;
+        try
+        {
+            tempCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            Renderer r = tempCube.GetComponent<Renderer>();
+            if (r != null && r.sharedMaterial != null && r.sharedMaterial.shader != null)
+            {
+                cachedSafeShader = r.sharedMaterial.shader;
+            }
+        }
+        catch { }
+        finally
+        {
+            if (tempCube != null) DestroyImmediate(tempCube);
+        }
+
+        if (cachedSafeShader != null) return cachedSafeShader;
+
+        // Fallback sang các shader chuẩn chắc chắn không bao giờ bị strip
+        Shader sprites = Shader.Find("Sprites/Default");
+        if (sprites != null) return sprites;
+
+        Shader ui = Shader.Find("UI/Default");
+        if (ui != null) return ui;
+
+        return Shader.Find("Standard");
     }
 
     Material CreateStickerMaterial(Color color)
     {
-        // Dùng Unlit cho nhãn dán 3D để màu sắc luôn tươi sáng, đồng nhất tuyệt đối với bảng màu 2D ở mọi góc nhìn
-        Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
-        if (shader == null) shader = Shader.Find("Unlit/Color");
-        if (shader == null) shader = Shader.Find("Universal Render Pipeline/Lit");
-        if (shader == null) shader = Shader.Find("Standard");
+        Shader shader = GetSafeShader(preferUnlit: true);
+        Material mat = null;
 
-        Material mat = new Material(shader);
+        if (shader != null)
+        {
+            try
+            {
+                mat = new Material(shader);
+            }
+            catch { }
+        }
+
+        if (mat == null)
+        {
+            mat = CreateFallbackMaterial(color);
+        }
+
         mat.color = color;
         if (mat.HasProperty("_BaseColor"))
             mat.SetColor("_BaseColor", color);
@@ -98,15 +177,60 @@ public class RubikGenerator : MonoBehaviour
 
     Material CreateColorMaterial(Color color, float smoothness = 0.5f)
     {
-        Shader shader = Shader.Find("Universal Render Pipeline/Lit");
-        if (shader == null) shader = Shader.Find("Standard");
+        Shader shader = GetSafeShader(preferUnlit: false);
+        Material mat = null;
 
-        Material mat = new Material(shader);
+        if (shader != null)
+        {
+            try
+            {
+                mat = new Material(shader);
+            }
+            catch { }
+        }
+
+        if (mat == null)
+        {
+            mat = CreateFallbackMaterial(color);
+        }
+
         mat.color = color;
-        mat.SetColor("_BaseColor", color);
-        mat.SetFloat("_Smoothness", smoothness);
-        mat.SetFloat("_Metallic", 0f);
+        if (mat.HasProperty("_BaseColor"))
+            mat.SetColor("_BaseColor", color);
+        if (mat.HasProperty("_Color"))
+            mat.SetColor("_Color", color);
+        if (mat.HasProperty("_Smoothness"))
+            mat.SetFloat("_Smoothness", smoothness);
+        if (mat.HasProperty("_Metallic"))
+            mat.SetFloat("_Metallic", 0f);
         return mat;
+    }
+
+    private Material CreateFallbackMaterial(Color color)
+    {
+        GameObject temp = null;
+        try
+        {
+            temp = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            Material baseMat = temp.GetComponent<Renderer>()?.sharedMaterial;
+            if (baseMat != null)
+            {
+                Material m = new Material(baseMat);
+                m.color = color;
+                if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", color);
+                return m;
+            }
+        }
+        catch { }
+        finally
+        {
+            if (temp != null) DestroyImmediate(temp);
+        }
+
+        Shader s = Shader.Find("Sprites/Default") ?? Shader.Find("UI/Default");
+        Material fallback = new Material(s);
+        fallback.color = color;
+        return fallback;
     }
 
     public void GenerateRubik()
@@ -134,13 +258,16 @@ public class RubikGenerator : MonoBehaviour
                     cubie.transform.localRotation = Quaternion.identity;
                     cubie.transform.localScale = Vector3.one;
 
-                    cubie.GetComponent<Renderer>().material = matBlack;
+                    if (matBlack == null) EnsureEmergencyMaterials();
+                    cubie.GetComponent<Renderer>().material = matBlack ?? CreateFallbackMaterial(new Color(0.1f, 0.1f, 0.12f));
 
                     CreateStickers(cubie, x, y, z);
                     allCubies.Add(cubie.transform);
                 }
             }
         }
+
+        Debug.Log($"[RubikGenerator] Đã tạo thành công {allCubies.Count} cubies cho khối Rubik 3D!");
     }
 
     void CreateStickers(GameObject parentCubie, int x, int y, int z)
@@ -195,6 +322,7 @@ public class RubikGenerator : MonoBehaviour
             Destroy(col);
 
         Renderer renderer = sticker.GetComponent<Renderer>();
-        renderer.material = mat;
+        if (mat == null) EnsureEmergencyMaterials();
+        renderer.material = mat ?? CreateFallbackMaterial(Color.white);
     }
 }

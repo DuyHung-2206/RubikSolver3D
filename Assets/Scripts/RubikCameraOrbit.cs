@@ -39,6 +39,8 @@ public class RubikCameraOrbit : MonoBehaviour
     private bool isRightOrMiddleOrbiting = false;
     private bool isLeftEmptySpaceOrbiting = false;
     private Vector2 lastPointerPos;
+    private bool isTouchEmptySpaceOrbiting = false;
+    private Vector2 lastTouchPos;
     private RubikUIController cachedUIController;
 
     private void Awake()
@@ -96,7 +98,7 @@ public class RubikCameraOrbit : MonoBehaviour
         if (cam != null)
         {
             cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = new Color32(0xEE, 0xF3, 0xF9, 255); // Xanh xám rất nhạt chuẩn ảnh tham chiếu #EEF3F9
+            cam.backgroundColor = RubikUITheme.AppBackground; // Xanh xám rất nhạt chuẩn ảnh tham chiếu #EEF3F9
         }
     }
 
@@ -133,17 +135,113 @@ public class RubikCameraOrbit : MonoBehaviour
         {
             isRightOrMiddleOrbiting = false;
             isLeftEmptySpaceOrbiting = false;
+            isTouchEmptySpaceOrbiting = false;
             return;
         }
 
-        bool pointerOverUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+        bool pointerOverUI = IsPointerOverUI();
 
+        // 1. XỬ LÝ MÀN HÌNH CẢM ỨNG (MOBILE TOUCHSCREEN)
+        if (Touchscreen.current != null && Touchscreen.current.touches.Count > 0)
+        {
+            int activeTouchCount = 0;
+            for (int i = 0; i < Touchscreen.current.touches.Count; i++)
+            {
+                if (Touchscreen.current.touches[i].press.isPressed)
+                    activeTouchCount++;
+            }
+
+            if (activeTouchCount >= 2)
+            {
+                // 2 NGÓN TAY: Thu phóng Pinch-to-zoom và Xoay góc nhìn Camera
+                isTouchEmptySpaceOrbiting = false;
+                var t0 = Touchscreen.current.touches[0];
+                var t1 = Touchscreen.current.touches[1];
+
+                if (!pointerOverUI && t0.press.isPressed && t1.press.isPressed)
+                {
+                    StopOrbitTourIfRunning();
+                    Vector2 p0 = t0.position.ReadValue();
+                    Vector2 p1 = t1.position.ReadValue();
+                    Vector2 d0 = t0.delta.ReadValue();
+                    Vector2 d1 = t1.delta.ReadValue();
+
+                    float currDist = Vector2.Distance(p0, p1);
+                    float prevDist = Vector2.Distance(p0 - d0, p1 - d1);
+
+                    if (Mathf.Abs(currDist - prevDist) > 0.5f)
+                    {
+                        float pinchDelta = (currDist - prevDist) * 0.012f;
+                        distance = Mathf.Clamp(distance - pinchDelta, minDistance, maxDistance);
+                    }
+
+                    Vector2 avgDelta = (d0 + d1) * 0.5f;
+                    if (avgDelta.sqrMagnitude > 0.001f)
+                    {
+                        x += avgDelta.x * xSpeed * 0.018f;
+                        y -= avgDelta.y * ySpeed * 0.018f;
+                        y = Mathf.Clamp(y, yMinLimit, yMaxLimit);
+                    }
+                }
+            }
+            else if (activeTouchCount == 1)
+            {
+                // 1 NGÓN TAY: Xoay góc nhìn Camera khi chạm và kéo trên vùng trống ngoài khối Rubik
+                var t = Touchscreen.current.primaryTouch;
+                Vector2 touchPos = t.position.ReadValue();
+
+                if (t.press.wasPressedThisFrame && !pointerOverUI)
+                {
+                    Camera cam = GetComponent<Camera>();
+                    if (cam == null) cam = Camera.main;
+                    bool hitCube = false;
+                    if (cam != null)
+                    {
+                        Ray ray = cam.ScreenPointToRay(touchPos);
+                        hitCube = Physics.Raycast(ray, 100f);
+                    }
+
+                    if (!hitCube)
+                    {
+                        isTouchEmptySpaceOrbiting = true;
+                        lastTouchPos = touchPos;
+                    }
+                }
+
+                if (isTouchEmptySpaceOrbiting && t.press.isPressed)
+                {
+                    Vector2 posDelta = touchPos - lastTouchPos;
+                    lastTouchPos = touchPos;
+
+                    if (posDelta.sqrMagnitude < 0.0001f)
+                        posDelta = t.delta.ReadValue();
+
+                    if (posDelta.sqrMagnitude > 0.0001f)
+                    {
+                        StopOrbitTourIfRunning();
+                        x += posDelta.x * xSpeed * 0.022f;
+                        y -= posDelta.y * ySpeed * 0.022f;
+                        y = Mathf.Clamp(y, yMinLimit, yMaxLimit);
+                    }
+                }
+                else if (!t.press.isPressed)
+                {
+                    isTouchEmptySpaceOrbiting = false;
+                }
+            }
+            else
+            {
+                isTouchEmptySpaceOrbiting = false;
+            }
+        }
+
+        // 2. XỬ LÝ CHUỘT / DESKTOP (WINDOWS PC)
         if (Mouse.current != null)
         {
             Vector2 currentPos = Mouse.current.position.ReadValue();
             bool rightOrMiddleHeld = Mouse.current.rightButton.isPressed || Mouse.current.middleButton.isPressed;
 
-            // 1. GIỮ CHUỘT PHẢI (HOẶC CHUỘT GIỮA): Xoay góc nhìn Rubik 3D ở bất kỳ đâu trên màn hình
+            // A. GIỮ CHUỘT PHẢI (HOẶC CHUỘT GIỮA): Xoay góc nhìn Rubik 3D ở bất kỳ đâu trên màn hình
             if (rightOrMiddleHeld)
             {
                 if (!isRightOrMiddleOrbiting)
@@ -173,7 +271,7 @@ public class RubikCameraOrbit : MonoBehaviour
                 isRightOrMiddleOrbiting = false;
             }
 
-            // 2. GIỮ CHUỘT TRÁI TRÊN VÙNG TRỐNG NGOÀI KHỐI RUBIK: Cũng hỗ trợ xoay góc nhìn Camera tiện lợi
+            // B. GIỮ CHUỘT TRÁI TRÊN VÙNG TRỐNG NGOÀI KHỐI RUBIK: Xoay góc nhìn Camera tiện lợi
             if (!rightOrMiddleHeld)
             {
                 if (Mouse.current.leftButton.wasPressedThisFrame && !pointerOverUI)
@@ -216,7 +314,7 @@ public class RubikCameraOrbit : MonoBehaviour
                 }
             }
 
-            // 3. THU PHÓNG BẰNG CON LĂN CHUỘT (Chuẩn hóa bước cuộn để không bị phóng đại đột ngột)
+            // C. THU PHÓNG BẰNG CON LĂN CHUỘT
             if (!pointerOverUI)
             {
                 float scroll = Mouse.current.scroll.ReadValue().y;
@@ -228,21 +326,27 @@ public class RubikCameraOrbit : MonoBehaviour
                 }
             }
         }
+    }
 
-        // 4. Hỗ trợ xoay camera bằng 2 ngón tay trên màn hình cảm ứng điện thoại
-        if (Touchscreen.current != null && Touchscreen.current.touches.Count >= 2 && !pointerOverUI)
+    private bool IsPointerOverUI()
+    {
+        if (EventSystem.current == null) return false;
+        if (EventSystem.current.IsPointerOverGameObject()) return true;
+
+        if (Touchscreen.current != null)
         {
-            var t0 = Touchscreen.current.touches[0];
-            var t1 = Touchscreen.current.touches[1];
-            if (t0.press.isPressed && t1.press.isPressed)
+            for (int i = 0; i < Touchscreen.current.touches.Count; i++)
             {
-                StopOrbitTourIfRunning();
-                Vector2 avgDelta = (t0.delta.ReadValue() + t1.delta.ReadValue()) * 0.5f;
-                x += avgDelta.x * xSpeed * 0.018f;
-                y -= avgDelta.y * ySpeed * 0.018f;
-                y = Mathf.Clamp(y, yMinLimit, yMaxLimit);
+                var touch = Touchscreen.current.touches[i];
+                if (touch.press.isPressed)
+                {
+                    int touchId = touch.touchId.ReadValue();
+                    if (EventSystem.current.IsPointerOverGameObject(touchId))
+                        return true;
+                }
             }
         }
+        return false;
     }
 
     private void LateUpdate()

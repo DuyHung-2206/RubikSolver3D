@@ -40,7 +40,7 @@ public static class RubikFriendlyPuzzleEditorBuilder
         }
 
         Canvas canvas = Object.FindAnyObjectByType<Canvas>();
-        if (canvas != null && canvas.transform.Find("FriendlyPuzzleUI_v4") == null)
+        if (canvas != null && canvas.transform.Find("FriendlyPuzzleUI_v6") == null)
         {
             RubikFriendlyPuzzleUIBuilder.EnsureUI(uiCtrl, forceRebuild: true);
             EditorUtility.SetDirty(uiCtrl);

@@ -12,7 +12,7 @@ using TMPro;
 /// </summary>
 public static class RubikFriendlyPuzzleUIBuilder
 {
-    private const string UIVersionTag = "FriendlyPuzzleUI_v4";
+    private const string UIVersionTag = "FriendlyPuzzleUI_v6";
 
     public static void EnsureUI(RubikUIController uiCtrl, bool forceRebuild = false)
     {
@@ -37,7 +37,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         else if (Camera.main != null)
         {
             Camera.main.clearFlags = CameraClearFlags.SolidColor;
-            Camera.main.backgroundColor = new Color32(0xEE, 0xF3, 0xF9, 255);
+            Camera.main.backgroundColor = RubikUITheme.AppBackground;
         }
 
         Transform versionMarker = canvas.transform.Find(UIVersionTag);
@@ -59,6 +59,8 @@ public static class RubikFriendlyPuzzleUIBuilder
         string[] managedRootNames = {
             "FriendlyPuzzleUI_v2",
             "FriendlyPuzzleUI_v3",
+            "FriendlyPuzzleUI_v4",
+            "FriendlyPuzzleUI_v5",
             UIVersionTag,
             "OrbitArcDecoration",
             "CenterHeaderGroup",
@@ -247,7 +249,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         rt.sizeDelta = new Vector2(560, 95);
         rt.anchoredPosition = new Vector2(-42, -34);
 
-        TextMeshProUGUI title = CreateTMP("TitleRubik3D", headerGroup.transform, "Rubik 3D", 28, FontStyles.Bold, new Color32(0x1E, 0x29, 0x3B, 255));
+        TextMeshProUGUI title = CreateTMP("TitleRubik3D", headerGroup.transform, "Rubik 3D", 28, FontStyles.Bold, RubikUITheme.Slate800);
         RectTransform titleRT = title.GetComponent<RectTransform>();
         titleRT.anchorMin = new Vector2(0.5f, 1f);
         titleRT.anchorMax = new Vector2(0.5f, 1f);
@@ -256,7 +258,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         titleRT.anchoredPosition = Vector2.zero;
 
         // Thanh thông tin thời gian & kỷ lục nhỏ gọn bên dưới tiêu đề
-        GameObject timerPill = CreateRoundedPanel("TimerPill", headerGroup.transform, new Color(1f, 1f, 1f, 0.85f), 14, addShadow: false);
+        GameObject timerPill = CreateRoundedPanel("TimerPill", headerGroup.transform, new Color(1f, 1f, 1f, 0.85f), RubikUITheme.RadiusMd, addShadow: false);
         RectTransform pillRT = timerPill.GetComponent<RectTransform>();
         pillRT.anchorMin = new Vector2(0.5f, 1f);
         pillRT.anchorMax = new Vector2(0.5f, 1f);
@@ -264,21 +266,21 @@ public static class RubikFriendlyPuzzleUIBuilder
         pillRT.sizeDelta = new Vector2(290, 32);
         pillRT.anchoredPosition = new Vector2(0, -44);
 
-        TextMeshProUGUI timerTMP = CreateTMP("TimerText", timerPill.transform, "00:00.000", 15, FontStyles.Bold, new Color32(0x47, 0x55, 0x69, 255));
+        TextMeshProUGUI timerTMP = CreateTMP("TimerText", timerPill.transform, "00:00.000", 15, FontStyles.Bold, RubikUITheme.Slate600);
         RectTransform timerRT = timerTMP.GetComponent<RectTransform>();
         timerRT.anchorMin = new Vector2(0f, 0f);
         timerRT.anchorMax = new Vector2(0.5f, 1f);
         timerRT.offsetMin = new Vector2(14, 0);
         timerRT.offsetMax = new Vector2(-4, 0);
 
-        TextMeshProUGUI pbTMP = CreateTMP("PBText", timerPill.transform, "PB: --:--.---", 13, FontStyles.Normal, new Color32(0x64, 0x74, 0x8B, 255));
+        TextMeshProUGUI pbTMP = CreateTMP("PBText", timerPill.transform, "PB: --:--.---", 13, FontStyles.Normal, RubikUITheme.Slate500);
         RectTransform pbRT = pbTMP.GetComponent<RectTransform>();
         pbRT.anchorMin = new Vector2(0.5f, 0f);
         pbRT.anchorMax = new Vector2(1f, 1f);
         pbRT.offsetMin = new Vector2(4, 0);
         pbRT.offsetMax = new Vector2(-12, 0);
 
-        TextMeshProUGUI scrambleTMP = CreateTMP("ScrambleText", headerGroup.transform, "", 12, FontStyles.Normal, new Color32(0x64, 0x74, 0x8B, 255));
+        TextMeshProUGUI scrambleTMP = CreateTMP("ScrambleText", headerGroup.transform, "", 12, FontStyles.Normal, RubikUITheme.Slate500);
         RectTransform scrRT = scrambleTMP.GetComponent<RectTransform>();
         scrRT.anchorMin = new Vector2(0.5f, 1f);
         scrRT.anchorMax = new Vector2(0.5f, 1f);
@@ -304,7 +306,7 @@ public static class RubikFriendlyPuzzleUIBuilder
     // =========================================================================
     private static RectTransform BuildLeftSidebar(Transform canvasTr, RubikUIController uiCtrl)
     {
-        GameObject sidebar = CreateRoundedPanel("SidebarPanel", canvasTr, Color.white, 22, addShadow: true);
+        GameObject sidebar = CreateRoundedPanel("SidebarPanel", canvasTr, Color.white, RubikUITheme.RadiusXl, addShadow: true);
         RectTransform rt = sidebar.GetComponent<RectTransform>();
         rt.anchorMin = new Vector2(0f, 0f);
         rt.anchorMax = new Vector2(0f, 1f);
@@ -332,7 +334,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         logoImg.sprite = RubikUISpriteFactory.GetRubikLogoSprite();
         logoImg.preserveAspect = true;
 
-        TextMeshProUGUI appTitle = CreateTMP("AppTitle", brandGroup.transform, "RubikSolver", 28, FontStyles.Bold, new Color32(0x1E, 0x29, 0x3B, 255), TextAlignmentOptions.Left);
+        TextMeshProUGUI appTitle = CreateTMP("AppTitle", brandGroup.transform, "RubikSolver", 28, FontStyles.Bold, RubikUITheme.Slate800, TextAlignmentOptions.Left);
         RectTransform appTitleRT = appTitle.GetComponent<RectTransform>();
         appTitleRT.anchorMin = new Vector2(0f, 0.5f);
         appTitleRT.anchorMax = new Vector2(1f, 0.5f);
@@ -340,7 +342,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         appTitleRT.offsetMin = new Vector2(86f, 2f);
         appTitleRT.offsetMax = new Vector2(-12f, 34f);
 
-        TextMeshProUGUI appSub = CreateTMP("AppSubtitle", brandGroup.transform, "Quét • Giải • Hướng dẫn", 13f, FontStyles.Normal, new Color32(0x64, 0x74, 0x8B, 255), TextAlignmentOptions.Left);
+        TextMeshProUGUI appSub = CreateTMP("AppSubtitle", brandGroup.transform, "Quét • Giải • Hướng dẫn", 13f, FontStyles.Normal, RubikUITheme.Slate500, TextAlignmentOptions.Left);
         RectTransform appSubRT = appSub.GetComponent<RectTransform>();
         appSubRT.anchorMin = new Vector2(0f, 0.5f);
         appSubRT.anchorMax = new Vector2(1f, 0.5f);
@@ -374,7 +376,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         uiCtrl.btnColorPicker = uiCtrl.btnNavColor2D;
 
         // --- Thẻ giới thiệu dưới đáy Sidebar: "Khám phá Rubik 3D" ---
-        GameObject exploreCard = CreateRoundedPanel("ExploreCard", sidebar.transform, new Color32(0xE0, 0xF2, 0xFE, 255), 16, addShadow: false);
+        GameObject exploreCard = CreateRoundedPanel("ExploreCard", sidebar.transform, RubikUITheme.Sky100, RubikUITheme.RadiusMd, addShadow: false);
         RectTransform expRT = exploreCard.GetComponent<RectTransform>();
         expRT.anchorMin = new Vector2(0f, 0f);
         expRT.anchorMax = new Vector2(1f, 0f);
@@ -394,14 +396,14 @@ public static class RubikFriendlyPuzzleUIBuilder
         expIconImg.sprite = RubikUISpriteFactory.GetRubikLogoSprite();
         expIconImg.preserveAspect = true;
 
-        TextMeshProUGUI expTitle = CreateTMP("ExploreTitle", exploreCard.transform, "Khám phá\nRubik 3D", 14.5f, FontStyles.Bold, new Color32(0x0F, 0x17, 0x2A, 255), TextAlignmentOptions.Left, wordWrapping: true);
+        TextMeshProUGUI expTitle = CreateTMP("ExploreTitle", exploreCard.transform, "Khám phá\nRubik 3D", 14.5f, FontStyles.Bold, RubikUITheme.Slate900, TextAlignmentOptions.Left, wordWrapping: true);
         RectTransform expTitleRT = expTitle.GetComponent<RectTransform>();
         expTitleRT.anchorMin = new Vector2(0f, 0.5f);
         expTitleRT.anchorMax = new Vector2(1f, 1f);
         expTitleRT.offsetMin = new Vector2(72f, 2f);
         expTitleRT.offsetMax = new Vector2(-46f, -10f);
 
-        TextMeshProUGUI expDesc = CreateTMP("ExploreDesc", exploreCard.transform, "Xoay, quan sát, tìm hiểu mọi góc độ.", 12.5f, FontStyles.Normal, new Color32(0x47, 0x55, 0x69, 255), TextAlignmentOptions.Left, wordWrapping: true);
+        TextMeshProUGUI expDesc = CreateTMP("ExploreDesc", exploreCard.transform, "Xoay, quan sát, tìm hiểu mọi góc độ.", 12.5f, FontStyles.Normal, RubikUITheme.Slate600, TextAlignmentOptions.Left, wordWrapping: true);
         RectTransform expDescRT = expDesc.GetComponent<RectTransform>();
         expDescRT.anchorMin = new Vector2(0f, 0f);
         expDescRT.anchorMax = new Vector2(1f, 0.5f);
@@ -419,7 +421,7 @@ public static class RubikFriendlyPuzzleUIBuilder
 
         Image expBtnBg = expBtnObj.AddComponent<Image>();
         expBtnBg.sprite = RubikUISpriteFactory.GetCircleSprite();
-        expBtnBg.color = new Color32(0x3B, 0x82, 0xF6, 255);
+        expBtnBg.color = RubikUITheme.Blue500;
 
         Button expBtn = expBtnObj.AddComponent<Button>();
         CreateIconChild(expBtnObj.transform, RubikUISpriteFactory.IconType.ArrowRight, Color.white, new Vector2(18f, 18f));
@@ -430,7 +432,7 @@ public static class RubikFriendlyPuzzleUIBuilder
 
     private static Button CreateSidebarNavButton(Transform parent, string name, string labelText, RubikUISpriteFactory.IconType iconType)
     {
-        GameObject btnObj = CreateRoundedPanel(name, parent, new Color(1f, 1f, 1f, 0f), 14, addShadow: false);
+        GameObject btnObj = CreateRoundedPanel(name, parent, new Color(1f, 1f, 1f, 0f), RubikUITheme.RadiusMd, addShadow: false);
         RectTransform rt = btnObj.GetComponent<RectTransform>();
         rt.sizeDelta = new Vector2(0f, 52f);
 
@@ -446,10 +448,10 @@ public static class RubikFriendlyPuzzleUIBuilder
 
         Image iconImg = iconObj.AddComponent<Image>();
         iconImg.sprite = RubikUISpriteFactory.GetIcon(iconType);
-        iconImg.color = new Color32(0x64, 0x74, 0x8B, 255);
+        iconImg.color = RubikUITheme.Slate500;
         iconImg.raycastTarget = false;
 
-        TextMeshProUGUI tmp = CreateTMP("Label", btnObj.transform, labelText, 15.5f, FontStyles.Normal, new Color32(0x33, 0x41, 0x55, 255), TextAlignmentOptions.Left);
+        TextMeshProUGUI tmp = CreateTMP("Label", btnObj.transform, labelText, 15.5f, FontStyles.Normal, RubikUITheme.Slate700, TextAlignmentOptions.Left);
         RectTransform lblRT = tmp.GetComponent<RectTransform>();
         lblRT.anchorMin = Vector2.zero;
         lblRT.anchorMax = Vector2.one;
@@ -464,7 +466,7 @@ public static class RubikFriendlyPuzzleUIBuilder
     // =========================================================================
     private static RectTransform BuildMobileBottomNav(Transform canvasTr, RubikUIController uiCtrl)
     {
-        GameObject mobileNav = CreateRoundedPanel("MobileBottomNav", canvasTr, Color.white, 18, addShadow: true);
+        GameObject mobileNav = CreateRoundedPanel("MobileBottomNav", canvasTr, Color.white, RubikUITheme.RadiusLg, addShadow: true);
         RectTransform rt = mobileNav.GetComponent<RectTransform>();
         rt.anchorMin = new Vector2(0f, 0f);
         rt.anchorMax = new Vector2(1f, 0f);
@@ -493,7 +495,7 @@ public static class RubikFriendlyPuzzleUIBuilder
 
     private static Button CreateMobileNavButton(Transform parent, string name, string label, RubikUISpriteFactory.IconType iconType)
     {
-        GameObject obj = CreateRoundedPanel(name, parent, new Color(1f, 1f, 1f, 0f), 14, addShadow: false);
+        GameObject obj = CreateRoundedPanel(name, parent, new Color(1f, 1f, 1f, 0f), RubikUITheme.RadiusMd, addShadow: false);
         Button btn = obj.AddComponent<Button>();
 
         GameObject iconObj = CreateUIObject("Icon", obj.transform);
@@ -506,10 +508,10 @@ public static class RubikFriendlyPuzzleUIBuilder
 
         Image iconImg = iconObj.AddComponent<Image>();
         iconImg.sprite = RubikUISpriteFactory.GetIcon(iconType);
-        iconImg.color = new Color32(0x64, 0x74, 0x8B, 255);
+        iconImg.color = RubikUITheme.Slate500;
         iconImg.raycastTarget = false;
 
-        TextMeshProUGUI tmp = CreateTMP("Label", obj.transform, label, 15f, FontStyles.Normal, new Color32(0x33, 0x41, 0x55, 255), TextAlignmentOptions.Center);
+        TextMeshProUGUI tmp = CreateTMP("Label", obj.transform, label, 15f, FontStyles.Normal, RubikUITheme.Slate700, TextAlignmentOptions.Center);
         RectTransform lblRT = tmp.GetComponent<RectTransform>();
         lblRT.anchorMin = new Vector2(0f, 0f);
         lblRT.anchorMax = new Vector2(1f, 0f);
@@ -557,11 +559,11 @@ public static class RubikFriendlyPuzzleUIBuilder
         bg.color = Color.white;
 
         Shadow sh = obj.AddComponent<Shadow>();
-        sh.effectColor = new Color(0.06f, 0.09f, 0.16f, 0.12f);
+        sh.effectColor = RubikUITheme.Ink(RubikUITheme.ShadowButton);
         sh.effectDistance = new Vector2(0f, -2f);
 
         Button btn = obj.AddComponent<Button>();
-        CreateIconChild(obj.transform, icon, new Color32(0x33, 0x41, 0x55, 255), new Vector2(24f, 24f));
+        CreateIconChild(obj.transform, icon, RubikUITheme.Slate700, new Vector2(24f, 24f));
         return btn;
     }
 
@@ -570,7 +572,7 @@ public static class RubikFriendlyPuzzleUIBuilder
     // =========================================================================
     private static RectTransform BuildBottomControlPanel(Transform canvasTr, RubikUIController uiCtrl)
     {
-        GameObject panel = CreateRoundedPanel("BottomPanel", canvasTr, Color.white, 20, addShadow: true);
+        GameObject panel = CreateRoundedPanel("BottomPanel", canvasTr, Color.white, RubikUITheme.RadiusLg, addShadow: true);
         RectTransform rt = panel.GetComponent<RectTransform>();
         rt.anchorMin = new Vector2(0.5f, 0f);
         rt.anchorMax = new Vector2(0.5f, 0f);
@@ -580,7 +582,7 @@ public static class RubikFriendlyPuzzleUIBuilder
 
         uiCtrl.bottomControlCard = panel;
 
-        TextMeshProUGUI header = CreateTMP("SectionHeader", panel.transform, "BẢNG ĐIỀU KHIỂN & CHẠY THỬ", 18f, FontStyles.Bold, new Color32(0x0F, 0x17, 0x2A, 255), TextAlignmentOptions.Left);
+        TextMeshProUGUI header = CreateTMP("SectionHeader", panel.transform, "BẢNG ĐIỀU KHIỂN & CHẠY THỬ", 18f, FontStyles.Bold, RubikUITheme.Slate900, TextAlignmentOptions.Left);
         RectTransform headerRT = header.GetComponent<RectTransform>();
         headerRT.anchorMin = new Vector2(0f, 1f);
         headerRT.anchorMax = new Vector2(1f, 1f);
@@ -605,37 +607,37 @@ public static class RubikFriendlyPuzzleUIBuilder
 
         uiCtrl.btnScramble = CreateBottomActionItem(
             row.transform, "BtnScramble", "Trộn khối",
-            new Color32(0x3B, 0x82, 0xF6, 255), Color.white,
+            RubikUITheme.Blue500, Color.white,
             RubikUISpriteFactory.IconType.Shuffle, hasOutline: false);
 
         uiCtrl.btnStart = CreateBottomActionItem(
             row.transform, "BtnStart", "Bắt đầu",
-            new Color32(0x22, 0xC5, 0x5E, 255), Color.white,
+            RubikUITheme.SuccessLight, Color.white,
             RubikUISpriteFactory.IconType.Play, hasOutline: false);
 
         uiCtrl.btnUndo = CreateBottomActionItem(
             row.transform, "BtnUndo", "Hoàn tác\n(Undo)",
-            new Color32(0xE2, 0xE8, 0xF0, 255), new Color32(0x47, 0x55, 0x69, 255),
+            RubikUITheme.Slate200, RubikUITheme.Slate600,
             RubikUISpriteFactory.IconType.Undo, hasOutline: false);
 
         uiCtrl.btnRedo = CreateBottomActionItem(
             row.transform, "BtnRedo", "Làm lại\n(Redo)",
-            new Color32(0xE2, 0xE8, 0xF0, 255), new Color32(0x47, 0x55, 0x69, 255),
+            RubikUITheme.Slate200, RubikUITheme.Slate600,
             RubikUISpriteFactory.IconType.Redo, hasOutline: false);
 
         uiCtrl.btnSolve = CreateBottomActionItem(
             row.transform, "BtnSolve", "Giải tự động",
-            new Color32(0xDD, 0xD6, 0xFE, 255), new Color32(0x7C, 0x3A, 0xED, 255),
+            RubikUITheme.VioletBg, RubikUITheme.Violet,
             RubikUISpriteFactory.IconType.SparkleBrain, hasOutline: false);
 
         uiCtrl.btnAlgorithm = CreateBottomActionItem(
             row.transform, "BtnAlgorithm", "Xem công thức",
-            new Color32(0xEF, 0xF6, 0xFF, 255), new Color32(0x25, 0x63, 0xEB, 255),
+            RubikUITheme.Blue50, RubikUITheme.Blue600,
             RubikUISpriteFactory.IconType.Book, hasOutline: true);
 
         uiCtrl.btnReset = CreateBottomActionItem(
             row.transform, "BtnReset", "Đặt lại (Reset)",
-            new Color32(0xFE, 0xE2, 0xE2, 255), new Color32(0xEF, 0x44, 0x44, 255),
+            RubikUITheme.DangerBg, RubikUITheme.DangerLight,
             RubikUISpriteFactory.IconType.Reset, hasOutline: false);
 
         return rt;
@@ -649,7 +651,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         GameObject itemContainer = CreateUIObject(name + "_Container", parent);
 
         // Nút hộp bo góc phía trên
-        GameObject btnBox = CreateRoundedPanel(name, itemContainer.transform, boxColor, 14, addShadow: false);
+        GameObject btnBox = CreateRoundedPanel(name, itemContainer.transform, boxColor, RubikUITheme.RadiusMd, addShadow: false);
         RectTransform boxRT = btnBox.GetComponent<RectTransform>();
         boxRT.anchorMin = new Vector2(0.5f, 1f);
         boxRT.anchorMax = new Vector2(0.5f, 1f);
@@ -665,9 +667,9 @@ public static class RubikFriendlyPuzzleUIBuilder
             outRT.anchorMax = Vector2.one;
             outRT.sizeDelta = Vector2.zero;
             Image outImg = outlineObj.AddComponent<Image>();
-            outImg.sprite = RubikUISpriteFactory.GetRoundedSprite(14, 2);
+            outImg.sprite = RubikUISpriteFactory.GetRoundedSprite(RubikUITheme.RadiusMd, 2);
             outImg.type = Image.Type.Sliced;
-            outImg.color = new Color32(0x93, 0xC5, 0xFD, 255);
+            outImg.color = RubikUITheme.Blue300;
             outImg.raycastTarget = false;
         }
 
@@ -677,7 +679,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         CreateIconChild(btnBox.transform, iconType, iconColor, new Vector2(26f, 26f));
 
         // Nhãn tiếng Việt bên dưới
-        TextMeshProUGUI lbl = CreateTMP("Label", itemContainer.transform, labelText, 12.5f, FontStyles.Normal, new Color32(0x1E, 0x29, 0x3B, 255), TextAlignmentOptions.Top);
+        TextMeshProUGUI lbl = CreateTMP("Label", itemContainer.transform, labelText, 12.5f, FontStyles.Normal, RubikUITheme.Slate800, TextAlignmentOptions.Top);
         RectTransform lblRT = lbl.GetComponent<RectTransform>();
         lblRT.anchorMin = new Vector2(0f, 0f);
         lblRT.anchorMax = new Vector2(1f, 0f);
@@ -704,7 +706,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         uiCtrl.rightControlContainer = rightRoot;
 
         // --- THẺ 1: Điều khiển xoay ---
-        GameObject rotCard = CreateRoundedPanel("RotationControlCard", rightRoot.transform, Color.white, 22, addShadow: true);
+        GameObject rotCard = CreateRoundedPanel("RotationControlCard", rightRoot.transform, Color.white, RubikUITheme.RadiusXl, addShadow: true);
         RectTransform rotRT = rotCard.GetComponent<RectTransform>();
         rotRT.anchorMin = new Vector2(0f, 1f);
         rotRT.anchorMax = new Vector2(1f, 1f);
@@ -712,7 +714,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         rotRT.sizeDelta = new Vector2(0f, 488f);
         rotRT.anchoredPosition = Vector2.zero;
 
-        TextMeshProUGUI rotTitle = CreateTMP("Title", rotCard.transform, "Điều khiển xoay", 21f, FontStyles.Bold, new Color32(0x0F, 0x17, 0x2A, 255), TextAlignmentOptions.Left);
+        TextMeshProUGUI rotTitle = CreateTMP("Title", rotCard.transform, "Điều khiển xoay", 21f, FontStyles.Bold, RubikUITheme.Slate900, TextAlignmentOptions.Left);
         RectTransform rotTitleRT = rotTitle.GetComponent<RectTransform>();
         rotTitleRT.anchorMin = new Vector2(0f, 1f);
         rotTitleRT.anchorMax = new Vector2(1f, 1f);
@@ -720,7 +722,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         rotTitleRT.offsetMin = new Vector2(22f, -44f);
         rotTitleRT.offsetMax = new Vector2(-22f, -14f);
 
-        TextMeshProUGUI rotSub = CreateTMP("Subtitle", rotCard.transform, "Nhấn phím hoặc bấm nút để xoay mặt", 13f, FontStyles.Normal, new Color32(0x64, 0x74, 0x8B, 255), TextAlignmentOptions.Left, wordWrapping: true);
+        TextMeshProUGUI rotSub = CreateTMP("Subtitle", rotCard.transform, "Nhấn phím hoặc bấm nút để xoay mặt", 13f, FontStyles.Normal, RubikUITheme.Slate500, TextAlignmentOptions.Left, wordWrapping: true);
         RectTransform rotSubRT = rotSub.GetComponent<RectTransform>();
         rotSubRT.anchorMin = new Vector2(0f, 1f);
         rotSubRT.anchorMax = new Vector2(1f, 1f);
@@ -747,28 +749,28 @@ public static class RubikFriendlyPuzzleUIBuilder
         // Hàng 1: U (Vàng), D (Xanh lá nhạt), F (Xanh dương)
         uiCtrl.btnFaceU = CreateFaceRotateCard(
             gridObj.transform, "BtnFaceU", "U", "Mặt trên",
-            new Color32(0xFA, 0xCC, 0x15, 255), new Color32(0x0F, 0x17, 0x2A, 255),
+            RubikUITheme.Yellow, RubikUITheme.Slate900,
             RubikUISpriteFactory.IconType.ArrowUp, out uiCtrl.labelFaceU);
 
         uiCtrl.btnFaceD = CreateFaceRotateCard(
             gridObj.transform, "BtnFaceD", "D", "Mặt dưới",
-            new Color32(0x6E, 0xE7, 0xB7, 255), new Color32(0x0F, 0x17, 0x2A, 255),
+            new Color32(0x6E, 0xE7, 0xB7, 255), RubikUITheme.Slate900,
             RubikUISpriteFactory.IconType.ArrowDown, out uiCtrl.labelFaceD);
 
         uiCtrl.btnFaceF = CreateFaceRotateCard(
             gridObj.transform, "BtnFaceF", "F", "Mặt trước",
-            new Color32(0x3B, 0x82, 0xF6, 255), Color.white,
+            RubikUITheme.Blue500, Color.white,
             RubikUISpriteFactory.IconType.ArrowRight, out uiCtrl.labelFaceF);
 
         // Hàng 2: B (Tím), R (Đỏ), L (Cam)
         uiCtrl.btnFaceB = CreateFaceRotateCard(
             gridObj.transform, "BtnFaceB", "B", "Mặt sau",
-            new Color32(0x7C, 0x3A, 0xED, 255), Color.white,
+            RubikUITheme.Violet, Color.white,
             RubikUISpriteFactory.IconType.ArrowLeft, out uiCtrl.labelFaceB);
 
         uiCtrl.btnFaceR = CreateFaceRotateCard(
             gridObj.transform, "BtnFaceR", "R", "Mặt phải",
-            new Color32(0xEF, 0x44, 0x44, 255), Color.white,
+            RubikUITheme.DangerLight, Color.white,
             RubikUISpriteFactory.IconType.ArrowRight, out uiCtrl.labelFaceR);
 
         uiCtrl.btnFaceL = CreateFaceRotateCard(
@@ -777,7 +779,7 @@ public static class RubikFriendlyPuzzleUIBuilder
             RubikUISpriteFactory.IconType.ArrowLeft, out uiCtrl.labelFaceL);
 
         // Hộp Shift "Xoay ngược chiều" ở dưới thẻ Điều khiển xoay
-        GameObject shiftBox = CreateRoundedPanel("BtnShiftToggle", rotCard.transform, new Color32(0xF8, 0xFA, 0xFC, 255), 14, addShadow: false);
+        GameObject shiftBox = CreateRoundedPanel("BtnShiftToggle", rotCard.transform, RubikUITheme.Slate50, RubikUITheme.RadiusMd, addShadow: false);
         RectTransform shiftRT = shiftBox.GetComponent<RectTransform>();
         shiftRT.anchorMin = new Vector2(0f, 0f);
         shiftRT.anchorMax = new Vector2(1f, 0f);
@@ -791,14 +793,14 @@ public static class RubikFriendlyPuzzleUIBuilder
         sbRT.anchorMax = Vector2.one;
         sbRT.sizeDelta = Vector2.zero;
         Image sbImg = shiftBorder.AddComponent<Image>();
-        sbImg.sprite = RubikUISpriteFactory.GetRoundedSprite(14, 2);
+        sbImg.sprite = RubikUISpriteFactory.GetRoundedSprite(RubikUITheme.RadiusMd, 2);
         sbImg.type = Image.Type.Sliced;
-        sbImg.color = new Color32(0xE2, 0xE8, 0xF0, 255);
+        sbImg.color = RubikUITheme.Slate200;
         sbImg.raycastTarget = false;
 
         uiCtrl.btnShiftToggle = shiftBox.AddComponent<Button>();
 
-        GameObject keycap = CreateRoundedPanel("ShiftKeycap", shiftBox.transform, new Color32(0xE2, 0xE8, 0xF0, 255), 10, addShadow: false);
+        GameObject keycap = CreateRoundedPanel("ShiftKeycap", shiftBox.transform, RubikUITheme.Slate200, RubikUITheme.RadiusSm, addShadow: false);
         RectTransform keyRT = keycap.GetComponent<RectTransform>();
         keyRT.anchorMin = new Vector2(0f, 0.5f);
         keyRT.anchorMax = new Vector2(0f, 0.5f);
@@ -807,17 +809,17 @@ public static class RubikFriendlyPuzzleUIBuilder
         keyRT.anchoredPosition = new Vector2(14f, 0f);
 
         uiCtrl.shiftBadgeBg = keycap.GetComponent<Image>();
-        uiCtrl.shiftBadgeText = CreateTMP("KeyText", keycap.transform, "Shift", 14f, FontStyles.Bold, new Color32(0x47, 0x55, 0x69, 255));
+        uiCtrl.shiftBadgeText = CreateTMP("KeyText", keycap.transform, "Shift", 14f, FontStyles.Bold, RubikUITheme.Slate600);
         StretchFull(uiCtrl.shiftBadgeText.GetComponent<RectTransform>());
 
-        TextMeshProUGUI shiftTitle = CreateTMP("ShiftTitle", shiftBox.transform, "Xoay ngược chiều", 15f, FontStyles.Bold, new Color32(0x1E, 0x29, 0x3B, 255), TextAlignmentOptions.Left);
+        TextMeshProUGUI shiftTitle = CreateTMP("ShiftTitle", shiftBox.transform, "Xoay ngược chiều", 15f, FontStyles.Bold, RubikUITheme.Slate800, TextAlignmentOptions.Left);
         RectTransform stRT = shiftTitle.GetComponent<RectTransform>();
         stRT.anchorMin = new Vector2(0f, 0.5f);
         stRT.anchorMax = new Vector2(1f, 1f);
         stRT.offsetMin = new Vector2(88f, 0f);
         stRT.offsetMax = new Vector2(-12f, -10f);
 
-        TextMeshProUGUI shiftSub = CreateTMP("ShiftSub", shiftBox.transform, "Giữ Shift + phím tương ứng", 12.5f, FontStyles.Normal, new Color32(0x64, 0x74, 0x8B, 255), TextAlignmentOptions.Left);
+        TextMeshProUGUI shiftSub = CreateTMP("ShiftSub", shiftBox.transform, "Giữ Shift + phím tương ứng", 12.5f, FontStyles.Normal, RubikUITheme.Slate500, TextAlignmentOptions.Left);
         RectTransform ssRT = shiftSub.GetComponent<RectTransform>();
         ssRT.anchorMin = new Vector2(0f, 0f);
         ssRT.anchorMax = new Vector2(1f, 0.5f);
@@ -825,7 +827,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         ssRT.offsetMax = new Vector2(-12f, 0f);
 
         // --- THẺ 2: Tốc độ xoay ---
-        GameObject speedCard = CreateRoundedPanel("SpeedControlCard", rightRoot.transform, Color.white, 20, addShadow: true);
+        GameObject speedCard = CreateRoundedPanel("SpeedControlCard", rightRoot.transform, Color.white, RubikUITheme.RadiusLg, addShadow: true);
         RectTransform speedRT = speedCard.GetComponent<RectTransform>();
         speedRT.anchorMin = new Vector2(0f, 0f);
         speedRT.anchorMax = new Vector2(1f, 0f);
@@ -833,7 +835,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         speedRT.sizeDelta = new Vector2(0f, 114f);
         speedRT.anchoredPosition = Vector2.zero;
 
-        TextMeshProUGUI speedHeader = CreateTMP("SpeedTitle", speedCard.transform, "Tốc độ:", 18.5f, FontStyles.Bold, new Color32(0x0F, 0x17, 0x2A, 255), TextAlignmentOptions.Left);
+        TextMeshProUGUI speedHeader = CreateTMP("SpeedTitle", speedCard.transform, "Tốc độ:", 18.5f, FontStyles.Bold, RubikUITheme.Slate900, TextAlignmentOptions.Left);
         RectTransform shRT = speedHeader.GetComponent<RectTransform>();
         shRT.anchorMin = new Vector2(0f, 1f);
         shRT.anchorMax = new Vector2(1f, 1f);
@@ -851,10 +853,10 @@ public static class RubikFriendlyPuzzleUIBuilder
         clockRT.anchoredPosition = new Vector2(22f, 34f);
         Image clockImg = clockObj.AddComponent<Image>();
         clockImg.sprite = RubikUISpriteFactory.GetIcon(RubikUISpriteFactory.IconType.Clock);
-        clockImg.color = new Color32(0x47, 0x55, 0x69, 255);
+        clockImg.color = RubikUITheme.Slate600;
 
         // Giá trị thời gian "0.22s"
-        TextMeshProUGUI speedValTMP = CreateTMP("SpeedValueText", speedCard.transform, "0.22s", 18f, FontStyles.Bold, new Color32(0x0F, 0x17, 0x2A, 255), TextAlignmentOptions.Left);
+        TextMeshProUGUI speedValTMP = CreateTMP("SpeedValueText", speedCard.transform, "0.22s", 18f, FontStyles.Bold, RubikUITheme.Slate900, TextAlignmentOptions.Left);
         RectTransform svRT = speedValTMP.GetComponent<RectTransform>();
         svRT.anchorMin = new Vector2(0f, 0f);
         svRT.anchorMax = new Vector2(0f, 0f);
@@ -883,7 +885,7 @@ public static class RubikFriendlyPuzzleUIBuilder
     {
         GameObject cell = CreateUIObject(name + "_Cell", parent);
 
-        GameObject btnCard = CreateRoundedPanel(name, cell.transform, cardColor, 16, addShadow: true);
+        GameObject btnCard = CreateRoundedPanel(name, cell.transform, cardColor, RubikUITheme.RadiusMd, addShadow: true);
         RectTransform cardRT = btnCard.GetComponent<RectTransform>();
         cardRT.anchorMin = new Vector2(0f, 1f);
         cardRT.anchorMax = new Vector2(1f, 1f);
@@ -914,7 +916,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         arrImg.color = contentColor;
         arrImg.raycastTarget = false;
 
-        TextMeshProUGUI cap = CreateTMP("Caption", cell.transform, captionVi, 13.5f, FontStyles.Normal, new Color32(0x33, 0x41, 0x55, 255), TextAlignmentOptions.Center);
+        TextMeshProUGUI cap = CreateTMP("Caption", cell.transform, captionVi, 13.5f, FontStyles.Normal, RubikUITheme.Slate700, TextAlignmentOptions.Center);
         RectTransform capRT = cap.GetComponent<RectTransform>();
         capRT.anchorMin = new Vector2(0f, 0f);
         capRT.anchorMax = new Vector2(1f, 0f);
@@ -930,7 +932,7 @@ public static class RubikFriendlyPuzzleUIBuilder
     // =========================================================================
     private static RectTransform BuildTopRightSettingsButton(Transform canvasTr, RubikUIController uiCtrl)
     {
-        GameObject btnObj = CreateRoundedPanel("BtnTopRightSettings", canvasTr, Color.white, 16, addShadow: true);
+        GameObject btnObj = CreateRoundedPanel("BtnTopRightSettings", canvasTr, Color.white, RubikUITheme.RadiusMd, addShadow: true);
         RectTransform rt = btnObj.GetComponent<RectTransform>();
         rt.anchorMin = new Vector2(1f, 1f);
         rt.anchorMax = new Vector2(1f, 1f);
@@ -949,10 +951,10 @@ public static class RubikFriendlyPuzzleUIBuilder
         iconRT.anchoredPosition = new Vector2(14f, 0f);
         Image iconImg = iconObj.AddComponent<Image>();
         iconImg.sprite = RubikUISpriteFactory.GetIcon(RubikUISpriteFactory.IconType.Settings);
-        iconImg.color = new Color32(0x33, 0x41, 0x55, 255);
+        iconImg.color = RubikUITheme.Slate700;
         iconImg.raycastTarget = false;
 
-        TextMeshProUGUI lbl = CreateTMP("Label", btnObj.transform, "Cài đặt", 14.5f, FontStyles.Bold, new Color32(0x1E, 0x29, 0x3B, 255), TextAlignmentOptions.Left);
+        TextMeshProUGUI lbl = CreateTMP("Label", btnObj.transform, "Cài đặt", 14.5f, FontStyles.Bold, RubikUITheme.Slate800, TextAlignmentOptions.Left);
         RectTransform lblRT = lbl.GetComponent<RectTransform>();
         lblRT.anchorMin = Vector2.zero;
         lblRT.anchorMax = Vector2.one;
@@ -972,9 +974,9 @@ public static class RubikFriendlyPuzzleUIBuilder
         RectTransform backdropRT = backdrop.GetComponent<RectTransform>();
         StretchFull(backdropRT);
         Image backdropImg = backdrop.AddComponent<Image>();
-        backdropImg.color = new Color(0.06f, 0.09f, 0.16f, 0.35f);
+        backdropImg.color = RubikUITheme.Ink(0.35f);
 
-        GameObject card = CreateRoundedPanel("DialogCard", backdrop.transform, Color.white, 24, addShadow: true);
+        GameObject card = CreateRoundedPanel("DialogCard", backdrop.transform, Color.white, RubikUITheme.RadiusXl, addShadow: true);
         RectTransform cardRT = card.GetComponent<RectTransform>();
         cardRT.anchorMin = new Vector2(0.5f, 0.5f);
         cardRT.anchorMax = new Vector2(0.5f, 0.5f);
@@ -983,7 +985,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         cardRT.anchoredPosition = Vector2.zero;
 
         // Tiêu đề lớn: NHẬP CÔNG THỨC RUBIK
-        TextMeshProUGUI title = CreateTMP("TitleText", card.transform, "NHẬP CÔNG THỨC RUBIK", 26f, FontStyles.Bold, new Color32(0x0F, 0x17, 0x2A, 255), TextAlignmentOptions.Left);
+        TextMeshProUGUI title = CreateTMP("TitleText", card.transform, "NHẬP CÔNG THỨC RUBIK", 26f, FontStyles.Bold, RubikUITheme.Slate900, TextAlignmentOptions.Left);
         RectTransform titleRT = title.GetComponent<RectTransform>();
         titleRT.anchorMin = new Vector2(0f, 1f);
         titleRT.anchorMax = new Vector2(1f, 1f);
@@ -992,7 +994,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         titleRT.offsetMax = new Vector2(-32f, -24f);
 
         // Ô nhập công thức bo góc
-        GameObject inputBox = CreateRoundedPanel("FormulaInputField", card.transform, Color.white, 16, addShadow: false);
+        GameObject inputBox = CreateRoundedPanel("FormulaInputField", card.transform, Color.white, RubikUITheme.RadiusMd, addShadow: false);
         RectTransform inputRT = inputBox.GetComponent<RectTransform>();
         inputRT.anchorMin = new Vector2(0f, 1f);
         inputRT.anchorMax = new Vector2(1f, 1f);
@@ -1003,9 +1005,9 @@ public static class RubikFriendlyPuzzleUIBuilder
         GameObject inputBorder = CreateUIObject("Border", inputBox.transform);
         StretchFull(inputBorder.GetComponent<RectTransform>());
         Image ibImg = inputBorder.AddComponent<Image>();
-        ibImg.sprite = RubikUISpriteFactory.GetRoundedSprite(16, 2);
+        ibImg.sprite = RubikUISpriteFactory.GetRoundedSprite(RubikUITheme.RadiusMd, 2);
         ibImg.type = Image.Type.Sliced;
-        ibImg.color = new Color32(0x94, 0xA3, 0xB8, 255);
+        ibImg.color = RubikUITheme.Slate400;
         ibImg.raycastTarget = false;
 
         GameObject textArea = CreateUIObject("Text Area", inputBox.transform);
@@ -1016,10 +1018,10 @@ public static class RubikFriendlyPuzzleUIBuilder
         taRT.offsetMax = new Vector2(-18f, -8f);
         textArea.AddComponent<RectMask2D>();
 
-        TextMeshProUGUI placeholder = CreateTMP("Placeholder", textArea.transform, "Ví dụ: R U R' U' F' U2...", 20f, FontStyles.Normal, new Color32(0x64, 0x74, 0x8B, 255), TextAlignmentOptions.Left);
+        TextMeshProUGUI placeholder = CreateTMP("Placeholder", textArea.transform, "Ví dụ: R U R' U' F' U2...", 20f, FontStyles.Normal, RubikUITheme.Slate500, TextAlignmentOptions.Left);
         StretchFull(placeholder.GetComponent<RectTransform>());
 
-        TextMeshProUGUI inputText = CreateTMP("Text", textArea.transform, "", 20f, FontStyles.Normal, new Color32(0x0F, 0x17, 0x2A, 255), TextAlignmentOptions.Left);
+        TextMeshProUGUI inputText = CreateTMP("Text", textArea.transform, "", 20f, FontStyles.Normal, RubikUITheme.Slate900, TextAlignmentOptions.Left);
         StretchFull(inputText.GetComponent<RectTransform>());
 
         TMP_InputField tmpInput = inputBox.AddComponent<TMP_InputField>();
@@ -1030,7 +1032,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         tmpInput.pointSize = 20;
 
         // Dòng thông báo lỗi / trạng thái kiểm tra cú pháp
-        TextMeshProUGUI statusTMP = CreateTMP("StatusText", card.transform, "", 13.5f, FontStyles.Normal, new Color32(0xDC, 0x26, 0x26, 255), TextAlignmentOptions.Left);
+        TextMeshProUGUI statusTMP = CreateTMP("StatusText", card.transform, "", 13.5f, FontStyles.Normal, RubikUITheme.Danger, TextAlignmentOptions.Left);
         RectTransform stRT = statusTMP.GetComponent<RectTransform>();
         stRT.anchorMin = new Vector2(0f, 1f);
         stRT.anchorMax = new Vector2(1f, 1f);
@@ -1054,9 +1056,9 @@ public static class RubikFriendlyPuzzleUIBuilder
         r1Hlg.childForceExpandWidth = true;
         r1Hlg.childForceExpandHeight = true;
 
-        Button btnPaste = CreateIconLabelPillButton(row1.transform, "BtnPaste", "Dán", RubikUISpriteFactory.IconType.Paste, new Color32(0xE2, 0xE8, 0xF0, 255), new Color32(0x0F, 0x17, 0x2A, 255));
-        Button btnCopy = CreateIconLabelPillButton(row1.transform, "BtnCopy", "Sao chép", RubikUISpriteFactory.IconType.Copy, new Color32(0xE2, 0xE8, 0xF0, 255), new Color32(0x0F, 0x17, 0x2A, 255));
-        Button btnClear = CreateIconLabelPillButton(row1.transform, "BtnClear", "Xóa", RubikUISpriteFactory.IconType.Trash, new Color32(0xE2, 0xE8, 0xF0, 255), new Color32(0x0F, 0x17, 0x2A, 255));
+        Button btnPaste = CreateIconLabelPillButton(row1.transform, "BtnPaste", "Dán", RubikUISpriteFactory.IconType.Paste, RubikUITheme.Slate200, RubikUITheme.Slate900);
+        Button btnCopy = CreateIconLabelPillButton(row1.transform, "BtnCopy", "Sao chép", RubikUISpriteFactory.IconType.Copy, RubikUITheme.Slate200, RubikUITheme.Slate900);
+        Button btnClear = CreateIconLabelPillButton(row1.transform, "BtnClear", "Xóa", RubikUISpriteFactory.IconType.Trash, RubikUITheme.Slate200, RubikUITheme.Slate900);
 
         // Hàng 2: Chạy mượt | Áp dụng ngay
         GameObject row2 = CreateUIObject("ExecuteButtonsRow", card.transform);
@@ -1074,11 +1076,11 @@ public static class RubikFriendlyPuzzleUIBuilder
         r2Hlg.childForceExpandWidth = true;
         r2Hlg.childForceExpandHeight = true;
 
-        Button btnPlayAnimate = CreateSimplePillButton(row2.transform, "BtnPlayAnimate", "Chạy mượt", new Color32(0xDB, 0xEA, 0xFE, 255), new Color32(0x1D, 0x4E, 0xD8, 255), 21f, hasBorder: false);
-        Button btnApplyInstant = CreateSimplePillButton(row2.transform, "BtnApplyInstant", "Áp dụng ngay", new Color32(0x25, 0x63, 0xEB, 255), Color.white, 21f, hasBorder: false);
+        Button btnPlayAnimate = CreateSimplePillButton(row2.transform, "BtnPlayAnimate", "Chạy mượt", RubikUITheme.Blue100, RubikUITheme.Blue700, 21f, hasBorder: false);
+        Button btnApplyInstant = CreateSimplePillButton(row2.transform, "BtnApplyInstant", "Áp dụng ngay", RubikUITheme.Blue600, Color.white, 21f, hasBorder: false);
 
         // Hàng 3: Đóng
-        Button btnClose = CreateSimplePillButton(card.transform, "BtnClose", "Đóng", new Color32(0xE2, 0xE8, 0xF0, 255), new Color32(0x0F, 0x17, 0x2A, 255), 21f, hasBorder: true);
+        Button btnClose = CreateSimplePillButton(card.transform, "BtnClose", "Đóng", RubikUITheme.Slate200, RubikUITheme.Slate900, 21f, hasBorder: true);
         RectTransform closeRT = btnClose.GetComponent<RectTransform>();
         closeRT.anchorMin = new Vector2(0f, 0f);
         closeRT.anchorMax = new Vector2(1f, 0f);
@@ -1117,7 +1119,7 @@ public static class RubikFriendlyPuzzleUIBuilder
 
     private static Button CreateIconLabelPillButton(Transform parent, string name, string text, RubikUISpriteFactory.IconType icon, Color bgCol, Color fgCol)
     {
-        GameObject obj = CreateRoundedPanel(name, parent, bgCol, 14, addShadow: false);
+        GameObject obj = CreateRoundedPanel(name, parent, bgCol, RubikUITheme.RadiusMd, addShadow: false);
         Button btn = obj.AddComponent<Button>();
         ApplySubtleButtonTransition(btn, bgCol);
 
@@ -1143,15 +1145,15 @@ public static class RubikFriendlyPuzzleUIBuilder
 
     private static Button CreateSimplePillButton(Transform parent, string name, string text, Color bgCol, Color fgCol, float fontSize, bool hasBorder)
     {
-        GameObject obj = CreateRoundedPanel(name, parent, bgCol, 16, addShadow: false);
+        GameObject obj = CreateRoundedPanel(name, parent, bgCol, RubikUITheme.RadiusMd, addShadow: false);
         if (hasBorder)
         {
             GameObject b = CreateUIObject("Border", obj.transform);
             StretchFull(b.GetComponent<RectTransform>());
             Image bImg = b.AddComponent<Image>();
-            bImg.sprite = RubikUISpriteFactory.GetRoundedSprite(16, 2);
+            bImg.sprite = RubikUISpriteFactory.GetRoundedSprite(RubikUITheme.RadiusMd, 2);
             bImg.type = Image.Type.Sliced;
-            bImg.color = new Color32(0x94, 0xA3, 0xB8, 255);
+            bImg.color = RubikUITheme.Slate400;
             bImg.raycastTarget = false;
         }
 
@@ -1174,7 +1176,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         arrowRT.sizeDelta = new Vector2(96f, 96f);
         Image arrowImg = arrowObj.AddComponent<Image>();
         arrowImg.sprite = RubikUISpriteFactory.GetCurvedRotationArrowSprite();
-        arrowImg.color = new Color32(0x1D, 0x6F, 0xF2, 255);
+        arrowImg.color = RubikUITheme.BrandBlue;
         arrowImg.raycastTarget = false;
         arrowObj.SetActive(false);
 
@@ -1188,7 +1190,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         solverRT.anchoredPosition = new Vector2(120f, 0f);
 
         // --- THẺ TRÊN: Thanh tiêu đề + Thẻ hướng dẫn nền xanh nhạt ---
-        GameObject topCard = CreateRoundedPanel("GuideTopCard", solverRoot.transform, Color.white, 22, addShadow: true);
+        GameObject topCard = CreateRoundedPanel("GuideTopCard", solverRoot.transform, Color.white, RubikUITheme.RadiusXl, addShadow: true);
         RectTransform topRT = topCard.GetComponent<RectTransform>();
         topRT.anchorMin = new Vector2(0f, 1f);
         topRT.anchorMax = new Vector2(1f, 1f);
@@ -1197,7 +1199,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         topRT.anchoredPosition = Vector2.zero;
 
         // Nút Quay lại "←"
-        GameObject backBtnObj = CreateRoundedPanel("BtnClose", topCard.transform, new Color(1f, 1f, 1f, 0f), 12, addShadow: false);
+        GameObject backBtnObj = CreateRoundedPanel("BtnClose", topCard.transform, new Color(1f, 1f, 1f, 0f), RubikUITheme.RadiusSm, addShadow: false);
         RectTransform backRT = backBtnObj.GetComponent<RectTransform>();
         backRT.anchorMin = new Vector2(0f, 1f);
         backRT.anchorMax = new Vector2(0f, 1f);
@@ -1205,10 +1207,10 @@ public static class RubikFriendlyPuzzleUIBuilder
         backRT.sizeDelta = new Vector2(46f, 46f);
         backRT.anchoredPosition = new Vector2(18f, -12f);
         Button btnCloseSolver = backBtnObj.AddComponent<Button>();
-        CreateIconChild(backBtnObj.transform, RubikUISpriteFactory.IconType.BackArrow, new Color32(0x0F, 0x17, 0x2A, 255), new Vector2(26f, 26f));
+        CreateIconChild(backBtnObj.transform, RubikUISpriteFactory.IconType.BackArrow, RubikUITheme.Slate900, new Vector2(26f, 26f));
 
         // Tiêu đề "Hướng dẫn giải"
-        TextMeshProUGUI guideTitle = CreateTMP("GuideHeaderTitle", topCard.transform, "Hướng dẫn giải", 22f, FontStyles.Bold, new Color32(0x0F, 0x17, 0x2A, 255), TextAlignmentOptions.Center);
+        TextMeshProUGUI guideTitle = CreateTMP("GuideHeaderTitle", topCard.transform, "Hướng dẫn giải", 22f, FontStyles.Bold, RubikUITheme.Slate900, TextAlignmentOptions.Center);
         RectTransform gtRT = guideTitle.GetComponent<RectTransform>();
         gtRT.anchorMin = new Vector2(0f, 1f);
         gtRT.anchorMax = new Vector2(1f, 1f);
@@ -1217,7 +1219,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         gtRT.anchoredPosition = new Vector2(0f, -12f);
 
         // Bộ đếm bước "Bước 3/7"
-        TextMeshProUGUI stepInfoTMP = CreateTMP("StepInfoText", topCard.transform, "Bước 1/7", 16.5f, FontStyles.Normal, new Color32(0x47, 0x55, 0x69, 255), TextAlignmentOptions.Right);
+        TextMeshProUGUI stepInfoTMP = CreateTMP("StepInfoText", topCard.transform, "Bước 1/7", 16.5f, FontStyles.Normal, RubikUITheme.Slate600, TextAlignmentOptions.Right);
         RectTransform siRT = stepInfoTMP.GetComponent<RectTransform>();
         siRT.anchorMin = new Vector2(1f, 1f);
         siRT.anchorMax = new Vector2(1f, 1f);
@@ -1226,7 +1228,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         siRT.anchoredPosition = new Vector2(-24f, -12f);
 
         // Thẻ nền xanh nhạt chứa Ký hiệu lớn (R), Tiêu đề mặt, Mô tả chiều xoay
-        GameObject blueCard = CreateRoundedPanel("InstructionBanner", topCard.transform, new Color32(0xEA, 0xF2, 0xFF, 255), 18, addShadow: false);
+        GameObject blueCard = CreateRoundedPanel("InstructionBanner", topCard.transform, new Color32(0xEA, 0xF2, 0xFF, 255), RubikUITheme.RadiusLg, addShadow: false);
         RectTransform bcRT = blueCard.GetComponent<RectTransform>();
         bcRT.anchorMin = new Vector2(0f, 0f);
         bcRT.anchorMax = new Vector2(1f, 1f);
@@ -1243,19 +1245,19 @@ public static class RubikFriendlyPuzzleUIBuilder
         badgeRT.anchoredPosition = new Vector2(20f, 0f);
         Image badgeImg = badgeCircle.AddComponent<Image>();
         badgeImg.sprite = RubikUISpriteFactory.GetCircleSprite();
-        badgeImg.color = new Color32(0x1D, 0x6F, 0xF2, 255);
+        badgeImg.color = RubikUITheme.BrandBlue;
 
         TextMeshProUGUI badgeText = CreateTMP("MoveBadgeText", badgeCircle.transform, "R", 24f, FontStyles.Bold, Color.white, TextAlignmentOptions.Center);
         StretchFull(badgeText.GetComponent<RectTransform>());
 
-        TextMeshProUGUI moveTitleTMP = CreateTMP("MoveTitleText", blueCard.transform, "Xoay mặt phải (R)", 21f, FontStyles.Bold, new Color32(0x0F, 0x17, 0x2A, 255), TextAlignmentOptions.Left);
+        TextMeshProUGUI moveTitleTMP = CreateTMP("MoveTitleText", blueCard.transform, "Xoay mặt phải (R)", 21f, FontStyles.Bold, RubikUITheme.Slate900, TextAlignmentOptions.Left);
         RectTransform mtRT = moveTitleTMP.GetComponent<RectTransform>();
         mtRT.anchorMin = new Vector2(0f, 0.5f);
         mtRT.anchorMax = new Vector2(1f, 1f);
         mtRT.offsetMin = new Vector2(106f, 2f);
         mtRT.offsetMax = new Vector2(-18f, -14f);
 
-        TextMeshProUGUI moveDescTMP = CreateTMP("NextMoveText", blueCard.transform, "Xoay 90° theo chiều kim đồng hồ", 15.5f, FontStyles.Normal, new Color32(0x33, 0x41, 0x55, 255), TextAlignmentOptions.Left, wordWrapping: true);
+        TextMeshProUGUI moveDescTMP = CreateTMP("NextMoveText", blueCard.transform, "Xoay 90° theo chiều kim đồng hồ", 15.5f, FontStyles.Normal, RubikUITheme.Slate700, TextAlignmentOptions.Left, wordWrapping: true);
         RectTransform mdRT = moveDescTMP.GetComponent<RectTransform>();
         mdRT.anchorMin = new Vector2(0f, 0f);
         mdRT.anchorMax = new Vector2(1f, 0.5f);
@@ -1268,7 +1270,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         botRT.anchorMin = new Vector2(0f, 0f);
         botRT.anchorMax = new Vector2(1f, 0f);
         botRT.pivot = new Vector2(0.5f, 0f);
-        botRT.sizeDelta = new Vector2(0f, 200f);
+        botRT.sizeDelta = new Vector2(0f, 196f);
         botRT.anchoredPosition = Vector2.zero;
 
         // Hàng nút điều hướng bước: "< Trước" | "Tiếp theo >" | "⚡ Tự động"
@@ -1287,23 +1289,24 @@ public static class RubikFriendlyPuzzleUIBuilder
         nrHlg.childForceExpandWidth = false;
         nrHlg.childForceExpandHeight = true;
 
-        Button btnPrev = CreateSimplePillButton(navRow.transform, "BtnPrev", "<    Trước", new Color32(0xE2, 0xE8, 0xF0, 255), new Color32(0x0F, 0x17, 0x2A, 255), 19f, hasBorder: false);
+        Button btnPrev = CreateSimplePillButton(navRow.transform, "BtnPrev", "<    Trước", RubikUITheme.Slate200, RubikUITheme.Slate900, 19f, hasBorder: false);
         btnPrev.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
 
-        Button btnNext = CreateSimplePillButton(navRow.transform, "BtnNext", "Tiếp theo    >", new Color32(0x1D, 0x6F, 0xF2, 255), Color.white, 19f, hasBorder: false);
+        Button btnNext = CreateSimplePillButton(navRow.transform, "BtnNext", "Tiếp theo    >", RubikUITheme.BrandBlue, Color.white, 19f, hasBorder: false);
         btnNext.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1.25f;
 
-        Button btnAuto = CreateSimplePillButton(navRow.transform, "BtnAuto", "Tự động", new Color32(0xDD, 0xD6, 0xFE, 255), new Color32(0x6D, 0x28, 0xD9, 255), 16.5f, hasBorder: false);
+        Button btnAuto = CreateSimplePillButton(navRow.transform, "BtnAuto", "Tự động", RubikUITheme.VioletBg, new Color32(0x6D, 0x28, 0xD9, 255), 16.5f, hasBorder: false);
         btnAuto.gameObject.AddComponent<LayoutElement>().preferredWidth = 135f;
 
         // Khung trắng chứa chuỗi Chip nước đi (R, U, R', U'...) + chấm tròn bên dưới
-        GameObject chipsCard = CreateRoundedPanel("ChipsCard", bottomArea.transform, Color.white, 20, addShadow: true);
+        GameObject chipsCard = CreateRoundedPanel("ChipsCard", bottomArea.transform, Color.white, RubikUITheme.RadiusLg, addShadow: true);
         RectTransform ccRT = chipsCard.GetComponent<RectTransform>();
+        // Neo theo đáy khung & chừa chỗ hàng nút ở trên (64 + khoảng cách 14) để không bao giờ che nút Trước/Tiếp theo/Tự động
         ccRT.anchorMin = new Vector2(0f, 0f);
-        ccRT.anchorMax = new Vector2(1f, 0f);
+        ccRT.anchorMax = new Vector2(1f, 1f);
         ccRT.pivot = new Vector2(0.5f, 0f);
-        ccRT.sizeDelta = new Vector2(0f, 118f);
-        ccRT.anchoredPosition = Vector2.zero;
+        ccRT.offsetMin = Vector2.zero;
+        ccRT.offsetMax = new Vector2(0f, -78f);
 
         GameObject scrollArea = CreateUIObject("ChipsScrollViewport", chipsCard.transform);
         RectTransform saRT = scrollArea.GetComponent<RectTransform>();
@@ -1383,9 +1386,9 @@ public static class RubikFriendlyPuzzleUIBuilder
         GameObject backdrop = CreateUIObject("CameraScannerPanel", canvasTr);
         StretchFull(backdrop.GetComponent<RectTransform>());
         Image bg = backdrop.AddComponent<Image>();
-        bg.color = new Color(0.06f, 0.09f, 0.16f, 0.42f);
+        bg.color = RubikUITheme.Ink(RubikUITheme.ScrimStrong);
 
-        GameObject card = CreateRoundedPanel("ScannerCard", backdrop.transform, Color.white, 24, addShadow: true);
+        GameObject card = CreateRoundedPanel("ScannerCard", backdrop.transform, Color.white, RubikUITheme.RadiusXl, addShadow: true);
         RectTransform cardRT = card.GetComponent<RectTransform>();
         cardRT.sizeDelta = new Vector2(880f, 630f);
 
@@ -1398,30 +1401,30 @@ public static class RubikFriendlyPuzzleUIBuilder
         headerRT.sizeDelta = new Vector2(-56f, 60f);
         headerRT.anchoredPosition = new Vector2(0f, -20f);
 
-        GameObject iconBadge = CreateRoundedPanel("HeaderIconBadge", headerObj.transform, new Color32(0xDB, 0xEA, 0xFE, 255), 14, addShadow: false);
+        GameObject iconBadge = CreateRoundedPanel("HeaderIconBadge", headerObj.transform, RubikUITheme.Blue100, RubikUITheme.RadiusMd, addShadow: false);
         RectTransform ibRT = iconBadge.GetComponent<RectTransform>();
         ibRT.anchorMin = new Vector2(0f, 0.5f);
         ibRT.anchorMax = new Vector2(0f, 0.5f);
         ibRT.pivot = new Vector2(0f, 0.5f);
         ibRT.sizeDelta = new Vector2(46f, 46f);
         ibRT.anchoredPosition = Vector2.zero;
-        CreateIconChild(iconBadge.transform, RubikUISpriteFactory.IconType.Camera, new Color32(0x25, 0x63, 0xEB, 255), new Vector2(24f, 24f));
+        CreateIconChild(iconBadge.transform, RubikUISpriteFactory.IconType.Camera, RubikUITheme.Blue600, new Vector2(24f, 24f));
 
-        TextMeshProUGUI titleTMP = CreateTMP("TitleText", headerObj.transform, "QUÉT KHỐI RUBIK QUA CAMERA", 22f, FontStyles.Bold, new Color32(0x0F, 0x17, 0x2A, 255), TextAlignmentOptions.Left);
+        TextMeshProUGUI titleTMP = CreateTMP("TitleText", headerObj.transform, "QUÉT KHỐI RUBIK QUA CAMERA", 22f, FontStyles.Bold, RubikUITheme.Slate900, TextAlignmentOptions.Left);
         RectTransform tRT = titleTMP.GetComponent<RectTransform>();
         tRT.anchorMin = new Vector2(0f, 0.5f);
         tRT.anchorMax = new Vector2(1f, 1f);
         tRT.offsetMin = new Vector2(58f, -2f);
         tRT.offsetMax = new Vector2(-56f, 0f);
 
-        TextMeshProUGUI subTMP = CreateTMP("SubtitleText", headerObj.transform, "Căn mặt Rubik vào khung ngắm 3x3 hoặc nhấp vào ô xem trước để chỉnh màu", 13.5f, FontStyles.Normal, new Color32(0x64, 0x74, 0x8B, 255), TextAlignmentOptions.Left);
+        TextMeshProUGUI subTMP = CreateTMP("SubtitleText", headerObj.transform, "Căn mặt Rubik vào khung ngắm 3x3 hoặc nhấp vào ô xem trước để chỉnh màu", 13.5f, FontStyles.Normal, RubikUITheme.Slate500, TextAlignmentOptions.Left);
         RectTransform sRT = subTMP.GetComponent<RectTransform>();
         sRT.anchorMin = new Vector2(0f, 0f);
         sRT.anchorMax = new Vector2(1f, 0.5f);
         sRT.offsetMin = new Vector2(58f, 0f);
         sRT.offsetMax = new Vector2(-56f, 2f);
 
-        GameObject closeBtnObj = CreateRoundedPanel("BtnClose", headerObj.transform, new Color32(0xF1, 0xF5, 0xF9, 255), 12, addShadow: false);
+        GameObject closeBtnObj = CreateRoundedPanel("BtnClose", headerObj.transform, RubikUITheme.Slate100, RubikUITheme.RadiusSm, addShadow: false);
         RectTransform closeRT = closeBtnObj.GetComponent<RectTransform>();
         closeRT.anchorMin = new Vector2(1f, 0.5f);
         closeRT.anchorMax = new Vector2(1f, 0.5f);
@@ -1429,11 +1432,11 @@ public static class RubikFriendlyPuzzleUIBuilder
         closeRT.sizeDelta = new Vector2(42f, 42f);
         closeRT.anchoredPosition = Vector2.zero;
         Button btnClose = closeBtnObj.AddComponent<Button>();
-        ApplySubtleButtonTransition(btnClose, new Color32(0xF1, 0xF5, 0xF9, 255));
-        CreateIconChild(closeBtnObj.transform, RubikUISpriteFactory.IconType.Close, new Color32(0x47, 0x55, 0x69, 255), new Vector2(20f, 20f));
+        ApplySubtleButtonTransition(btnClose, RubikUITheme.Slate100);
+        CreateIconChild(closeBtnObj.transform, RubikUISpriteFactory.IconType.Close, RubikUITheme.Slate600, new Vector2(20f, 20f));
 
         // --- CỘT TRÁI: KHUNG CAMERA & ĐIỀU CHỈNH KHUNG NGẮM ---
-        GameObject leftContainer = CreateRoundedPanel("LeftContainer", card.transform, new Color32(0xF8, 0xFA, 0xFC, 255), 18, addShadow: false);
+        GameObject leftContainer = CreateRoundedPanel("LeftContainer", card.transform, RubikUITheme.Slate50, RubikUITheme.RadiusLg, addShadow: false);
         RectTransform leftRT = leftContainer.GetComponent<RectTransform>();
         leftRT.sizeDelta = new Vector2(400f, 510f);
         leftRT.anchoredPosition = new Vector2(-206f, -34f);
@@ -1441,13 +1444,13 @@ public static class RubikFriendlyPuzzleUIBuilder
         GameObject leftBorder = CreateUIObject("Border", leftContainer.transform);
         StretchFull(leftBorder.GetComponent<RectTransform>());
         Image lbImg = leftBorder.AddComponent<Image>();
-        lbImg.sprite = RubikUISpriteFactory.GetRoundedSprite(18, 2);
+        lbImg.sprite = RubikUISpriteFactory.GetRoundedSprite(RubikUITheme.RadiusLg, 2);
         lbImg.type = Image.Type.Sliced;
-        lbImg.color = new Color32(0xE2, 0xE8, 0xF0, 255);
+        lbImg.color = RubikUITheme.Slate200;
         lbImg.raycastTarget = false;
 
         // Khung nền tối ôm sát CameraFeed
-        GameObject camFrame = CreateRoundedPanel("CameraFeedFrame", leftContainer.transform, new Color32(0x0F, 0x17, 0x2A, 255), 14, addShadow: false);
+        GameObject camFrame = CreateRoundedPanel("CameraFeedFrame", leftContainer.transform, RubikUITheme.Slate900, RubikUITheme.RadiusMd, addShadow: false);
         RectTransform cfRT = camFrame.GetComponent<RectTransform>();
         cfRT.sizeDelta = new Vector2(342f, 342f);
         cfRT.anchoredPosition = new Vector2(0f, 64f);
@@ -1479,7 +1482,7 @@ public static class RubikFriendlyPuzzleUIBuilder
                 boxRT.anchoredPosition = new Vector2(xPos, yPos);
 
                 Image boxImg = box.AddComponent<Image>();
-                boxImg.sprite = RubikUISpriteFactory.GetRoundedSprite(10, 4);
+                boxImg.sprite = RubikUISpriteFactory.GetRoundedSprite(RubikUITheme.RadiusSm, 4);
                 boxImg.type = Image.Type.Sliced;
                 boxImg.color = new Color(1f, 1f, 1f, 0.85f);
 
@@ -1490,11 +1493,11 @@ public static class RubikFriendlyPuzzleUIBuilder
                 dot.GetComponent<RectTransform>().sizeDelta = new Vector2(7f, 7f);
                 Image dotImg = dot.AddComponent<Image>();
                 dotImg.sprite = RubikUISpriteFactory.GetCircleSprite();
-                dotImg.color = (index == 4) ? new Color32(0xFA, 0xCC, 0x15, 255) : new Color(1f, 1f, 1f, 0.65f);
+                dotImg.color = (index == 4) ? RubikUITheme.Yellow : new Color(1f, 1f, 1f, 0.65f);
             }
         }
 
-        TextMeshProUGUI distanceLabelTMP = CreateTMP("DistanceLabelText", leftContainer.transform, "Cự ly ngắm: <b>Vừa (Cầm tay 25-40cm)</b>", 13.5f, FontStyles.Normal, new Color32(0x33, 0x41, 0x55, 255), TextAlignmentOptions.Center);
+        TextMeshProUGUI distanceLabelTMP = CreateTMP("DistanceLabelText", leftContainer.transform, "Cự ly ngắm: <b>Vừa (Cầm tay 25-40cm)</b>", 13.5f, FontStyles.Normal, RubikUITheme.Slate700, TextAlignmentOptions.Center);
         RectTransform dlRT = distanceLabelTMP.GetComponent<RectTransform>();
         dlRT.sizeDelta = new Vector2(350f, 22f);
         dlRT.anchoredPosition = new Vector2(0f, -124f);
@@ -1516,19 +1519,19 @@ public static class RubikFriendlyPuzzleUIBuilder
         nudgeHlg.childControlWidth = false;
         nudgeHlg.childControlHeight = false;
 
-        Button btnNudgeLeft = CreateSimplePillButton(nudgeRow.transform, "BtnNudgeLeft", "<", new Color32(0xE2, 0xE8, 0xF0, 255), new Color32(0x1E, 0x29, 0x3B, 255), 14f, hasBorder: false);
+        Button btnNudgeLeft = CreateSimplePillButton(nudgeRow.transform, "BtnNudgeLeft", "<", RubikUITheme.Slate200, RubikUITheme.Slate800, 14f, hasBorder: false);
         btnNudgeLeft.GetComponent<RectTransform>().sizeDelta = new Vector2(44f, 28f);
 
-        Button btnNudgeUp = CreateSimplePillButton(nudgeRow.transform, "BtnNudgeUp", "^", new Color32(0xE2, 0xE8, 0xF0, 255), new Color32(0x1E, 0x29, 0x3B, 255), 15f, hasBorder: false);
+        Button btnNudgeUp = CreateSimplePillButton(nudgeRow.transform, "BtnNudgeUp", "^", RubikUITheme.Slate200, RubikUITheme.Slate800, 15f, hasBorder: false);
         btnNudgeUp.GetComponent<RectTransform>().sizeDelta = new Vector2(44f, 28f);
 
-        Button btnNudgeDown = CreateSimplePillButton(nudgeRow.transform, "BtnNudgeDown", "v", new Color32(0xE2, 0xE8, 0xF0, 255), new Color32(0x1E, 0x29, 0x3B, 255), 13.5f, hasBorder: false);
+        Button btnNudgeDown = CreateSimplePillButton(nudgeRow.transform, "BtnNudgeDown", "v", RubikUITheme.Slate200, RubikUITheme.Slate800, 13.5f, hasBorder: false);
         btnNudgeDown.GetComponent<RectTransform>().sizeDelta = new Vector2(44f, 28f);
 
-        Button btnNudgeRight = CreateSimplePillButton(nudgeRow.transform, "BtnNudgeRight", ">", new Color32(0xE2, 0xE8, 0xF0, 255), new Color32(0x1E, 0x29, 0x3B, 255), 14f, hasBorder: false);
+        Button btnNudgeRight = CreateSimplePillButton(nudgeRow.transform, "BtnNudgeRight", ">", RubikUITheme.Slate200, RubikUITheme.Slate800, 14f, hasBorder: false);
         btnNudgeRight.GetComponent<RectTransform>().sizeDelta = new Vector2(44f, 28f);
 
-        Button btnResetNudge = CreateSimplePillButton(nudgeRow.transform, "BtnResetReticlePos", "Về tâm", new Color32(0xDB, 0xEA, 0xFE, 255), new Color32(0x1D, 0x4E, 0xD8, 255), 13f, hasBorder: false);
+        Button btnResetNudge = CreateSimplePillButton(nudgeRow.transform, "BtnResetReticlePos", "Về tâm", RubikUITheme.Blue100, RubikUITheme.Blue700, 13f, hasBorder: false);
         btnResetNudge.GetComponent<RectTransform>().sizeDelta = new Vector2(72f, 28f);
 
         // Hàng nút điều khiển Camera
@@ -1543,22 +1546,22 @@ public static class RubikFriendlyPuzzleUIBuilder
         camHlg.childControlWidth = false;
         camHlg.childControlHeight = false;
 
-        Button btnSwitch = CreateSimplePillButton(camControlsRow.transform, "BtnSwitchCamera", "Đổi Cam", new Color32(0xE2, 0xE8, 0xF0, 255), new Color32(0x1E, 0x29, 0x3B, 255), 13.5f, hasBorder: false);
+        Button btnSwitch = CreateSimplePillButton(camControlsRow.transform, "BtnSwitchCamera", "Đổi Cam", RubikUITheme.Slate200, RubikUITheme.Slate800, 13.5f, hasBorder: false);
         btnSwitch.GetComponent<RectTransform>().sizeDelta = new Vector2(108f, 32f);
 
         Button btnFlipH = CreateSimplePillButton(camControlsRow.transform, "BtnFlipHorizontal", "Gương: BẬT", new Color32(0x10, 0xB9, 0x81, 255), Color.white, 13.5f, hasBorder: false);
         btnFlipH.GetComponent<RectTransform>().sizeDelta = new Vector2(124f, 32f);
 
-        Button btnFlipV = CreateSimplePillButton(camControlsRow.transform, "BtnFlipVertical", "Dọc: CHUẨN", new Color32(0xE2, 0xE8, 0xF0, 255), new Color32(0x33, 0x41, 0x55, 255), 13.5f, hasBorder: false);
+        Button btnFlipV = CreateSimplePillButton(camControlsRow.transform, "BtnFlipVertical", "Dọc: CHUẨN", RubikUITheme.Slate200, RubikUITheme.Slate700, 13.5f, hasBorder: false);
         btnFlipV.GetComponent<RectTransform>().sizeDelta = new Vector2(114f, 32f);
 
-        TextMeshProUGUI cameraInfoTMP = CreateTMP("CameraInfoText", leftContainer.transform, "Camera: Tự động nhận diện thiết bị", 12f, FontStyles.Normal, new Color32(0x64, 0x74, 0x8B, 255), TextAlignmentOptions.Center);
+        TextMeshProUGUI cameraInfoTMP = CreateTMP("CameraInfoText", leftContainer.transform, "Camera: Tự động nhận diện thiết bị", 12f, FontStyles.Normal, RubikUITheme.Slate500, TextAlignmentOptions.Center);
         RectTransform ciRT = cameraInfoTMP.GetComponent<RectTransform>();
         ciRT.sizeDelta = new Vector2(360f, 18f);
         ciRT.anchoredPosition = new Vector2(0f, -242f);
 
         // --- CỘT PHẢI: HƯỚNG DẪN MẶT, LƯỚI XEM TRƯỚC 3X3 & ĐỒNG BỘ ---
-        GameObject rightContainer = CreateRoundedPanel("RightContainer", card.transform, new Color32(0xF8, 0xFA, 0xFC, 255), 18, addShadow: false);
+        GameObject rightContainer = CreateRoundedPanel("RightContainer", card.transform, RubikUITheme.Slate50, RubikUITheme.RadiusLg, addShadow: false);
         RectTransform rightRT = rightContainer.GetComponent<RectTransform>();
         rightRT.sizeDelta = new Vector2(408f, 510f);
         rightRT.anchoredPosition = new Vector2(208f, -34f);
@@ -1566,23 +1569,23 @@ public static class RubikFriendlyPuzzleUIBuilder
         GameObject rightBorder = CreateUIObject("Border", rightContainer.transform);
         StretchFull(rightBorder.GetComponent<RectTransform>());
         Image rbImg = rightBorder.AddComponent<Image>();
-        rbImg.sprite = RubikUISpriteFactory.GetRoundedSprite(18, 2);
+        rbImg.sprite = RubikUISpriteFactory.GetRoundedSprite(RubikUITheme.RadiusLg, 2);
         rbImg.type = Image.Type.Sliced;
-        rbImg.color = new Color32(0xE2, 0xE8, 0xF0, 255);
+        rbImg.color = RubikUITheme.Slate200;
         rbImg.raycastTarget = false;
 
         // Thẻ hướng dẫn mặt hiện tại nền xanh nhạt
-        GameObject guideBanner = CreateRoundedPanel("GuideBanner", rightContainer.transform, new Color32(0xEF, 0xF6, 0xFF, 255), 14, addShadow: false);
+        GameObject guideBanner = CreateRoundedPanel("GuideBanner", rightContainer.transform, RubikUITheme.Blue50, RubikUITheme.RadiusMd, addShadow: false);
         RectTransform gbRT = guideBanner.GetComponent<RectTransform>();
         gbRT.sizeDelta = new Vector2(376f, 76f);
         gbRT.anchoredPosition = new Vector2(0f, 202f);
 
-        TextMeshProUGUI faceTitleTMP = CreateTMP("FaceTitleText", rightContainer.transform, "MẶT 1/6: MẶT F (TRƯỚC)", 17.5f, FontStyles.Bold, new Color32(0x1D, 0x4E, 0xD8, 255), TextAlignmentOptions.Center);
+        TextMeshProUGUI faceTitleTMP = CreateTMP("FaceTitleText", rightContainer.transform, "MẶT 1/6: MẶT F (TRƯỚC)", 17.5f, FontStyles.Bold, RubikUITheme.Blue700, TextAlignmentOptions.Center);
         RectTransform ftRT = faceTitleTMP.GetComponent<RectTransform>();
         ftRT.sizeDelta = new Vector2(356f, 26f);
         ftRT.anchoredPosition = new Vector2(0f, 220f);
 
-        TextMeshProUGUI faceGuideTMP = CreateTMP("FaceGuideText", rightContainer.transform, "1. Hướng mặt bất kỳ vào camera làm mặt TRƯỚC (F). Nhấn phím ENTER để chụp.", 13f, FontStyles.Normal, new Color32(0x33, 0x41, 0x55, 255), TextAlignmentOptions.Center, wordWrapping: true);
+        TextMeshProUGUI faceGuideTMP = CreateTMP("FaceGuideText", rightContainer.transform, "1. Hướng mặt bất kỳ vào camera làm mặt TRƯỚC (F). Nhấn phím ENTER để chụp.", 13f, FontStyles.Normal, RubikUITheme.Slate700, TextAlignmentOptions.Center, wordWrapping: true);
         RectTransform fgRT = faceGuideTMP.GetComponent<RectTransform>();
         fgRT.sizeDelta = new Vector2(356f, 38f);
         fgRT.anchoredPosition = new Vector2(0f, 186f);
@@ -1602,9 +1605,9 @@ public static class RubikFriendlyPuzzleUIBuilder
         string[] badgeNames = { "F", "R", "B", "L", "U", "D" };
         for (int i = 0; i < 6; i++)
         {
-            Color badgeCol = (i == 0) ? (Color)new Color32(0x25, 0x63, 0xEB, 255) : (Color)new Color32(0xE2, 0xE8, 0xF0, 255);
-            Color txtCol = (i == 0) ? Color.white : (Color)new Color32(0x47, 0x55, 0x69, 255);
-            GameObject badge = CreateRoundedPanel($"Badge_{badgeNames[i]}", faceBadgesObj.transform, badgeCol, 10, addShadow: false);
+            Color badgeCol = (i == 0) ? (Color)RubikUITheme.Blue600 : (Color)RubikUITheme.Slate200;
+            Color txtCol = (i == 0) ? Color.white : (Color)RubikUITheme.Slate600;
+            GameObject badge = CreateRoundedPanel($"Badge_{badgeNames[i]}", faceBadgesObj.transform, badgeCol, RubikUITheme.RadiusSm, addShadow: false);
             badge.GetComponent<RectTransform>().sizeDelta = new Vector2(48f, 28f);
 
             TextMeshProUGUI bTxt = CreateTMP("Text", badge.transform, badgeNames[i], 14f, FontStyles.Bold, txtCol, TextAlignmentOptions.Center);
@@ -1612,7 +1615,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         }
 
         // Khung đế tối chứa 9 ô xem trước (PreviewGridContainer)
-        GameObject previewFrame = CreateRoundedPanel("PreviewFrame", rightContainer.transform, new Color32(0x1E, 0x29, 0x3B, 255), 14, addShadow: false);
+        GameObject previewFrame = CreateRoundedPanel("PreviewFrame", rightContainer.transform, RubikUITheme.Slate800, RubikUITheme.RadiusMd, addShadow: false);
         RectTransform pfRT = previewFrame.GetComponent<RectTransform>();
         pfRT.sizeDelta = new Vector2(142f, 142f);
         pfRT.anchoredPosition = new Vector2(0f, 40f);
@@ -1631,17 +1634,17 @@ public static class RubikFriendlyPuzzleUIBuilder
 
         for (int i = 0; i < 9; i++)
         {
-            GameObject cell = CreateRoundedPanel($"Cell_{i}", previewGridObj.transform, (i == 4) ? Color.white : new Color(0.88f, 0.90f, 0.94f), 8, addShadow: false);
+            GameObject cell = CreateRoundedPanel($"Cell_{i}", previewGridObj.transform, (i == 4) ? Color.white : new Color(0.88f, 0.90f, 0.94f), RubikUITheme.RadiusXs, addShadow: false);
             cell.AddComponent<Button>();
         }
 
-        TextMeshProUGUI hintTMP = CreateTMP("PreviewHintText", rightContainer.transform, "Nhấn trực tiếp vào từng ô trên lưới 3x3 để sửa màu thủ công", 12f, FontStyles.Normal, new Color32(0x64, 0x74, 0x8B, 255), TextAlignmentOptions.Center);
+        TextMeshProUGUI hintTMP = CreateTMP("PreviewHintText", rightContainer.transform, "Nhấn trực tiếp vào từng ô trên lưới 3x3 để sửa màu thủ công", 12f, FontStyles.Normal, RubikUITheme.Slate500, TextAlignmentOptions.Center);
         RectTransform hRT = hintTMP.GetComponent<RectTransform>();
         hRT.sizeDelta = new Vector2(360f, 18f);
         hRT.anchoredPosition = new Vector2(0f, -45f);
 
         // Nút Chụp mặt này
-        Button btnCapture = CreateSimplePillButton(rightContainer.transform, "BtnCaptureFace", "CHỤP MẶT NÀY (ENTER)", new Color32(0x16, 0xA3, 0x4A, 255), Color.white, 16f, hasBorder: false);
+        Button btnCapture = CreateSimplePillButton(rightContainer.transform, "BtnCaptureFace", "CHỤP MẶT NÀY (ENTER)", RubikUITheme.Success, Color.white, 16f, hasBorder: false);
         RectTransform capRT = btnCapture.GetComponent<RectTransform>();
         capRT.sizeDelta = new Vector2(360f, 42f);
         capRT.anchoredPosition = new Vector2(0f, -78f);
@@ -1658,13 +1661,13 @@ public static class RubikFriendlyPuzzleUIBuilder
         navHlg.childControlWidth = false;
         navHlg.childControlHeight = false;
 
-        Button btnPrev = CreateSimplePillButton(navRow.transform, "BtnPrevFace", "< Trước", new Color32(0xE2, 0xE8, 0xF0, 255), new Color32(0x1E, 0x29, 0x3B, 255), 14f, hasBorder: false);
+        Button btnPrev = CreateSimplePillButton(navRow.transform, "BtnPrevFace", "< Trước", RubikUITheme.Slate200, RubikUITheme.Slate800, 14f, hasBorder: false);
         btnPrev.GetComponent<RectTransform>().sizeDelta = new Vector2(106f, 34f);
 
         Button btnRescan = CreateSimplePillButton(navRow.transform, "BtnRescanFace", "Quét lại", new Color32(0xFE, 0xF3, 0xC7, 255), new Color32(0xB4, 0x53, 0x09, 255), 14f, hasBorder: false);
         btnRescan.GetComponent<RectTransform>().sizeDelta = new Vector2(128f, 34f);
 
-        Button btnNext = CreateSimplePillButton(navRow.transform, "BtnNextFace", "Tiếp >", new Color32(0xE2, 0xE8, 0xF0, 255), new Color32(0x1E, 0x29, 0x3B, 255), 14f, hasBorder: false);
+        Button btnNext = CreateSimplePillButton(navRow.transform, "BtnNextFace", "Tiếp >", RubikUITheme.Slate200, RubikUITheme.Slate800, 14f, hasBorder: false);
         btnNext.GetComponent<RectTransform>().sizeDelta = new Vector2(106f, 34f);
 
         // Hai Toggle cài đặt nâng cao
@@ -1672,13 +1675,13 @@ public static class RubikFriendlyPuzzleUIBuilder
         Toggle toggleCustomMat = CreateModernToggle(rightContainer.transform, "ToggleCustomMaterialSync", "Đồng bộ chất liệu màu thực tế (Custom Material)", new Vector2(0f, -180f), true);
 
         // Dòng trạng thái StatusText
-        TextMeshProUGUI statusTMP = CreateTMP("StatusText", rightContainer.transform, "Sẵn sàng quét. Hãy căn thẳng khối Rubik!", 13f, FontStyles.Bold, new Color32(0x02, 0x84, 0xC7, 255), TextAlignmentOptions.Center);
+        TextMeshProUGUI statusTMP = CreateTMP("StatusText", rightContainer.transform, "Sẵn sàng quét. Hãy căn thẳng khối Rubik!", 13f, FontStyles.Bold, RubikUITheme.Sky600, TextAlignmentOptions.Center);
         RectTransform stRT = statusTMP.GetComponent<RectTransform>();
         stRT.sizeDelta = new Vector2(376f, 22f);
         stRT.anchoredPosition = new Vector2(0f, -203f);
 
         // Nút Đồng bộ lên khối 3D
-        Button btnApply = CreateSimplePillButton(rightContainer.transform, "BtnApplyToCube", "ĐỒNG BỘ LÊN KHỐI 3D", new Color32(0x25, 0x63, 0xEB, 255), Color.white, 16f, hasBorder: false);
+        Button btnApply = CreateSimplePillButton(rightContainer.transform, "BtnApplyToCube", "ĐỒNG BỘ LÊN KHỐI 3D", RubikUITheme.Blue600, Color.white, 16f, hasBorder: false);
         RectTransform applyRT = btnApply.GetComponent<RectTransform>();
         applyRT.sizeDelta = new Vector2(360f, 42f);
         applyRT.anchoredPosition = new Vector2(0f, -231f);
@@ -1742,9 +1745,9 @@ public static class RubikFriendlyPuzzleUIBuilder
         GameObject backdrop = CreateUIObject("NetColorPickerPanel", canvasTr);
         StretchFull(backdrop.GetComponent<RectTransform>());
         Image bg = backdrop.AddComponent<Image>();
-        bg.color = new Color(0.06f, 0.09f, 0.16f, 0.42f);
+        bg.color = RubikUITheme.Ink(RubikUITheme.ScrimStrong);
 
-        GameObject card = CreateRoundedPanel("NetCard", backdrop.transform, Color.white, 24, addShadow: true);
+        GameObject card = CreateRoundedPanel("NetCard", backdrop.transform, Color.white, RubikUITheme.RadiusXl, addShadow: true);
         RectTransform cardRT = card.GetComponent<RectTransform>();
         cardRT.sizeDelta = new Vector2(840f, 610f);
 
@@ -1757,30 +1760,30 @@ public static class RubikFriendlyPuzzleUIBuilder
         headerRT.sizeDelta = new Vector2(-56f, 60f);
         headerRT.anchoredPosition = new Vector2(0f, -20f);
 
-        GameObject iconBadge = CreateRoundedPanel("HeaderIconBadge", headerObj.transform, new Color32(0xF3, 0xE8, 0xFF, 255), 14, addShadow: false);
+        GameObject iconBadge = CreateRoundedPanel("HeaderIconBadge", headerObj.transform, new Color32(0xF3, 0xE8, 0xFF, 255), RubikUITheme.RadiusMd, addShadow: false);
         RectTransform ibRT = iconBadge.GetComponent<RectTransform>();
         ibRT.anchorMin = new Vector2(0f, 0.5f);
         ibRT.anchorMax = new Vector2(0f, 0.5f);
         ibRT.pivot = new Vector2(0f, 0.5f);
         ibRT.sizeDelta = new Vector2(46f, 46f);
         ibRT.anchoredPosition = Vector2.zero;
-        CreateIconChild(iconBadge.transform, RubikUISpriteFactory.IconType.Grid2D, new Color32(0x7C, 0x3A, 0xED, 255), new Vector2(24f, 24f));
+        CreateIconChild(iconBadge.transform, RubikUISpriteFactory.IconType.Grid2D, RubikUITheme.Violet, new Vector2(24f, 24f));
 
-        TextMeshProUGUI titleTMP = CreateTMP("TitleText", headerObj.transform, "TÔ MÀU KHỐI RUBIK 2D", 22f, FontStyles.Bold, new Color32(0x0F, 0x17, 0x2A, 255), TextAlignmentOptions.Left);
+        TextMeshProUGUI titleTMP = CreateTMP("TitleText", headerObj.transform, "TÔ MÀU KHỐI RUBIK 2D", 22f, FontStyles.Bold, RubikUITheme.Slate900, TextAlignmentOptions.Left);
         RectTransform tRT = titleTMP.GetComponent<RectTransform>();
         tRT.anchorMin = new Vector2(0f, 0.5f);
         tRT.anchorMax = new Vector2(1f, 1f);
         tRT.offsetMin = new Vector2(58f, -2f);
         tRT.offsetMax = new Vector2(-56f, 0f);
 
-        TextMeshProUGUI subTMP = CreateTMP("SubtitleText", headerObj.transform, "Chọn màu ở bảng bên phải rồi nhấp vào từng ô trên sơ đồ chữ thập để tô màu", 13.5f, FontStyles.Normal, new Color32(0x64, 0x74, 0x8B, 255), TextAlignmentOptions.Left);
+        TextMeshProUGUI subTMP = CreateTMP("SubtitleText", headerObj.transform, "Chọn màu ở bảng bên phải rồi nhấp vào từng ô trên sơ đồ chữ thập để tô màu", 13.5f, FontStyles.Normal, RubikUITheme.Slate500, TextAlignmentOptions.Left);
         RectTransform sRT = subTMP.GetComponent<RectTransform>();
         sRT.anchorMin = new Vector2(0f, 0f);
         sRT.anchorMax = new Vector2(1f, 0.5f);
         sRT.offsetMin = new Vector2(58f, 0f);
         sRT.offsetMax = new Vector2(-56f, 2f);
 
-        GameObject closeTopObj = CreateRoundedPanel("BtnCloseTop", headerObj.transform, new Color32(0xF1, 0xF5, 0xF9, 255), 12, addShadow: false);
+        GameObject closeTopObj = CreateRoundedPanel("BtnCloseTop", headerObj.transform, RubikUITheme.Slate100, RubikUITheme.RadiusSm, addShadow: false);
         RectTransform closeTopRT = closeTopObj.GetComponent<RectTransform>();
         closeTopRT.anchorMin = new Vector2(1f, 0.5f);
         closeTopRT.anchorMax = new Vector2(1f, 0.5f);
@@ -1788,11 +1791,11 @@ public static class RubikFriendlyPuzzleUIBuilder
         closeTopRT.sizeDelta = new Vector2(42f, 42f);
         closeTopRT.anchoredPosition = Vector2.zero;
         Button btnCloseTop = closeTopObj.AddComponent<Button>();
-        ApplySubtleButtonTransition(btnCloseTop, new Color32(0xF1, 0xF5, 0xF9, 255));
-        CreateIconChild(closeTopObj.transform, RubikUISpriteFactory.IconType.Close, new Color32(0x47, 0x55, 0x69, 255), new Vector2(20f, 20f));
+        ApplySubtleButtonTransition(btnCloseTop, RubikUITheme.Slate100);
+        CreateIconChild(closeTopObj.transform, RubikUISpriteFactory.IconType.Close, RubikUITheme.Slate600, new Vector2(20f, 20f));
 
         // --- KHUNG SƠ ĐỒ CHỮ THẬP 54 Ô BÊN TRÁI ---
-        GameObject netBoardCard = CreateRoundedPanel("NetBoardCard", card.transform, new Color32(0xF8, 0xFA, 0xFC, 255), 18, addShadow: false);
+        GameObject netBoardCard = CreateRoundedPanel("NetBoardCard", card.transform, RubikUITheme.Slate50, RubikUITheme.RadiusLg, addShadow: false);
         RectTransform nbRT = netBoardCard.GetComponent<RectTransform>();
         nbRT.sizeDelta = new Vector2(540f, 366f);
         nbRT.anchoredPosition = new Vector2(-122f, 16f);
@@ -1800,9 +1803,9 @@ public static class RubikFriendlyPuzzleUIBuilder
         GameObject nbBorder = CreateUIObject("Border", netBoardCard.transform);
         StretchFull(nbBorder.GetComponent<RectTransform>());
         Image nbbImg = nbBorder.AddComponent<Image>();
-        nbbImg.sprite = RubikUISpriteFactory.GetRoundedSprite(18, 2);
+        nbbImg.sprite = RubikUISpriteFactory.GetRoundedSprite(RubikUITheme.RadiusLg, 2);
         nbbImg.type = Image.Type.Sliced;
-        nbbImg.color = new Color32(0xE2, 0xE8, 0xF0, 255);
+        nbbImg.color = RubikUITheme.Slate200;
         nbbImg.raycastTarget = false;
 
         GameObject netContainerObj = CreateUIObject("NetContainer", netBoardCard.transform);
@@ -1811,7 +1814,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         ncRT.anchoredPosition = Vector2.zero;
 
         // --- KHUNG BẢNG CHỌN MÀU BÊN PHẢI ---
-        GameObject paletteCard = CreateRoundedPanel("PaletteContainer", card.transform, new Color32(0xF8, 0xFA, 0xFC, 255), 18, addShadow: false);
+        GameObject paletteCard = CreateRoundedPanel("PaletteContainer", card.transform, RubikUITheme.Slate50, RubikUITheme.RadiusLg, addShadow: false);
         RectTransform pcRT = paletteCard.GetComponent<RectTransform>();
         pcRT.sizeDelta = new Vector2(226f, 366f);
         pcRT.anchoredPosition = new Vector2(279f, 16f);
@@ -1819,9 +1822,9 @@ public static class RubikFriendlyPuzzleUIBuilder
         GameObject pcBorder = CreateUIObject("Border", paletteCard.transform);
         StretchFull(pcBorder.GetComponent<RectTransform>());
         Image pcbImg = pcBorder.AddComponent<Image>();
-        pcbImg.sprite = RubikUISpriteFactory.GetRoundedSprite(18, 2);
+        pcbImg.sprite = RubikUISpriteFactory.GetRoundedSprite(RubikUITheme.RadiusLg, 2);
         pcbImg.type = Image.Type.Sliced;
-        pcbImg.color = new Color32(0xE2, 0xE8, 0xF0, 255);
+        pcbImg.color = RubikUITheme.Slate200;
         pcbImg.raycastTarget = false;
 
         VerticalLayoutGroup vlg = paletteCard.AddComponent<VerticalLayoutGroup>();
@@ -1831,28 +1834,28 @@ public static class RubikFriendlyPuzzleUIBuilder
         vlg.childControlWidth = false;
         vlg.childControlHeight = false;
 
-        TextMeshProUGUI paletteLabel = CreateTMP("PaletteLabel", paletteCard.transform, "BẢNG CHỌN MÀU", 14.5f, FontStyles.Bold, new Color32(0x33, 0x41, 0x55, 255), TextAlignmentOptions.Center);
+        TextMeshProUGUI paletteLabel = CreateTMP("PaletteLabel", paletteCard.transform, "BẢNG CHỌN MÀU", 14.5f, FontStyles.Bold, RubikUITheme.Slate700, TextAlignmentOptions.Center);
         paletteLabel.GetComponent<RectTransform>().sizeDelta = new Vector2(188f, 24f);
 
-        Button btnWhite = CreatePaletteColorButton(paletteCard.transform, "BtnWhite", "Trắng (W)", new Color(0.96f, 0.96f, 0.96f), new Color32(0x0F, 0x17, 0x2A, 255));
-        Button btnYellow = CreatePaletteColorButton(paletteCard.transform, "BtnYellow", "Vàng (Y)", new Color(1.00f, 0.84f, 0.00f), new Color32(0x0F, 0x17, 0x2A, 255));
+        Button btnWhite = CreatePaletteColorButton(paletteCard.transform, "BtnWhite", "Trắng (W)", new Color(0.96f, 0.96f, 0.96f), RubikUITheme.Slate900);
+        Button btnYellow = CreatePaletteColorButton(paletteCard.transform, "BtnYellow", "Vàng (Y)", new Color(1.00f, 0.84f, 0.00f), RubikUITheme.Slate900);
         Button btnGreen = CreatePaletteColorButton(paletteCard.transform, "BtnGreen", "Xanh lá (G)", new Color(0.00f, 0.65f, 0.28f), Color.white);
         Button btnBlue = CreatePaletteColorButton(paletteCard.transform, "BtnBlue", "Xanh dương (B)", new Color(0.00f, 0.35f, 0.85f), Color.white);
         Button btnRed = CreatePaletteColorButton(paletteCard.transform, "BtnRed", "Đỏ (R)", new Color(0.85f, 0.12f, 0.15f), Color.white);
         Button btnOrange = CreatePaletteColorButton(paletteCard.transform, "BtnOrange", "Cam (O)", new Color(1.00f, 0.40f, 0.00f), Color.white);
 
         // --- THANH ĐẾM MÀU & TRẠNG THÁI ---
-        GameObject countPill = CreateRoundedPanel("CountInfoPill", card.transform, new Color32(0xF1, 0xF5, 0xF9, 255), 10, addShadow: false);
+        GameObject countPill = CreateRoundedPanel("CountInfoPill", card.transform, RubikUITheme.Slate100, RubikUITheme.RadiusSm, addShadow: false);
         RectTransform cpRT = countPill.GetComponent<RectTransform>();
         cpRT.sizeDelta = new Vector2(784f, 32f);
         cpRT.anchoredPosition = new Vector2(0f, -190f);
 
         TextMeshProUGUI countInfoTMP = CreateTMP("CountInfoText", countPill.transform,
             "Trắng: <b>9/9</b>   •   Vàng: <b>9/9</b>   •   Xanh lá: <b>9/9</b>   •   Xanh dương: <b>9/9</b>   •   Đỏ: <b>9/9</b>   •   Cam: <b>9/9</b>",
-            13.5f, FontStyles.Normal, new Color32(0x33, 0x41, 0x55, 255), TextAlignmentOptions.Center);
+            13.5f, FontStyles.Normal, RubikUITheme.Slate700, TextAlignmentOptions.Center);
         StretchFull(countInfoTMP.GetComponent<RectTransform>());
 
-        TextMeshProUGUI statusTMP = CreateTMP("StatusText", card.transform, "Khối Rubik 100% hợp lệ! Sẵn sàng đồng bộ lên 3D.", 15f, FontStyles.Bold, new Color32(0x16, 0xA3, 0x4A, 255), TextAlignmentOptions.Center);
+        TextMeshProUGUI statusTMP = CreateTMP("StatusText", card.transform, "Khối Rubik 100% hợp lệ! Sẵn sàng đồng bộ lên 3D.", 15f, FontStyles.Bold, RubikUITheme.Success, TextAlignmentOptions.Center);
         RectTransform stRT = statusTMP.GetComponent<RectTransform>();
         stRT.sizeDelta = new Vector2(784f, 24f);
         stRT.anchoredPosition = new Vector2(0f, -222f);
@@ -1869,13 +1872,13 @@ public static class RubikFriendlyPuzzleUIBuilder
         actHlg.childControlWidth = false;
         actHlg.childControlHeight = false;
 
-        Button btnApply = CreateSimplePillButton(actionsObj.transform, "BtnApplyToCube", "Đồng bộ lên 3D", new Color32(0x16, 0xA3, 0x4A, 255), Color.white, 16.5f, hasBorder: false);
+        Button btnApply = CreateSimplePillButton(actionsObj.transform, "BtnApplyToCube", "Đồng bộ lên 3D", RubikUITheme.Success, Color.white, 16.5f, hasBorder: false);
         btnApply.GetComponent<RectTransform>().sizeDelta = new Vector2(230f, 46f);
 
-        Button btnReset = CreateSimplePillButton(actionsObj.transform, "BtnResetSolved", "Khôi phục chuẩn", new Color32(0xE2, 0xE8, 0xF0, 255), new Color32(0x1E, 0x29, 0x3B, 255), 16f, hasBorder: false);
+        Button btnReset = CreateSimplePillButton(actionsObj.transform, "BtnResetSolved", "Khôi phục chuẩn", RubikUITheme.Slate200, RubikUITheme.Slate800, 16f, hasBorder: false);
         btnReset.GetComponent<RectTransform>().sizeDelta = new Vector2(200f, 46f);
 
-        Button btnClose = CreateSimplePillButton(actionsObj.transform, "BtnClose", "Đóng", new Color32(0xFE, 0xE2, 0xE2, 255), new Color32(0xDC, 0x26, 0x26, 255), 16f, hasBorder: false);
+        Button btnClose = CreateSimplePillButton(actionsObj.transform, "BtnClose", "Đóng", RubikUITheme.DangerBg, RubikUITheme.Danger, 16f, hasBorder: false);
         btnClose.GetComponent<RectTransform>().sizeDelta = new Vector2(130f, 46f);
 
         // Gắn tham chiếu vào RubikNetColorPicker
@@ -1914,11 +1917,11 @@ public static class RubikFriendlyPuzzleUIBuilder
 
     private static Button CreatePaletteColorButton(Transform parent, string name, string label, Color bgCol, Color fgCol)
     {
-        GameObject obj = CreateRoundedPanel(name, parent, bgCol, 12, addShadow: false);
+        GameObject obj = CreateRoundedPanel(name, parent, bgCol, RubikUITheme.RadiusSm, addShadow: false);
         obj.GetComponent<RectTransform>().sizeDelta = new Vector2(188f, 42f);
 
         Outline outline = obj.AddComponent<Outline>();
-        outline.effectColor = new Color(0.06f, 0.09f, 0.16f, 0.14f);
+        outline.effectColor = RubikUITheme.Ink(0.14f);
         outline.effectDistance = new Vector2(1.5f, -1.5f);
 
         Button btn = obj.AddComponent<Button>();
@@ -1939,7 +1942,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         Toggle toggle = obj.AddComponent<Toggle>();
         toggle.isOn = defaultOn;
 
-        GameObject bgObj = CreateRoundedPanel("Background", obj.transform, new Color32(0xE2, 0xE8, 0xF0, 255), 6, addShadow: false);
+        GameObject bgObj = CreateRoundedPanel("Background", obj.transform, RubikUITheme.Slate200, 6, addShadow: false);
         RectTransform bgRT = bgObj.GetComponent<RectTransform>();
         bgRT.anchorMin = new Vector2(0f, 0.5f);
         bgRT.anchorMax = new Vector2(0f, 0.5f);
@@ -1947,14 +1950,14 @@ public static class RubikFriendlyPuzzleUIBuilder
         bgRT.sizeDelta = new Vector2(20f, 20f);
         bgRT.anchoredPosition = new Vector2(4f, 0f);
 
-        GameObject checkObj = CreateRoundedPanel("Checkmark", bgObj.transform, new Color32(0x25, 0x63, 0xEB, 255), 6, addShadow: false);
+        GameObject checkObj = CreateRoundedPanel("Checkmark", bgObj.transform, RubikUITheme.Blue600, 6, addShadow: false);
         StretchFull(checkObj.GetComponent<RectTransform>());
         CreateIconChild(checkObj.transform, RubikUISpriteFactory.IconType.Check, Color.white, new Vector2(14f, 14f));
 
         toggle.targetGraphic = bgObj.GetComponent<Image>();
         toggle.graphic = checkObj.GetComponent<Image>();
 
-        TextMeshProUGUI lbl = CreateTMP("Label", obj.transform, labelText, 12.5f, FontStyles.Normal, new Color32(0x33, 0x41, 0x55, 255), TextAlignmentOptions.Left);
+        TextMeshProUGUI lbl = CreateTMP("Label", obj.transform, labelText, 12.5f, FontStyles.Normal, RubikUITheme.Slate700, TextAlignmentOptions.Left);
         RectTransform lRT = lbl.GetComponent<RectTransform>();
         lRT.anchorMin = new Vector2(0f, 0f);
         lRT.anchorMax = new Vector2(1f, 1f);
@@ -1972,13 +1975,13 @@ public static class RubikFriendlyPuzzleUIBuilder
         GameObject backdrop = CreateUIObject("ConfirmResetModal", canvasTr);
         StretchFull(backdrop.GetComponent<RectTransform>());
         Image bg = backdrop.AddComponent<Image>();
-        bg.color = new Color(0.06f, 0.09f, 0.16f, 0.38f);
+        bg.color = RubikUITheme.Ink(RubikUITheme.ScrimLight);
 
-        GameObject card = CreateRoundedPanel("Card", backdrop.transform, Color.white, 22, addShadow: true);
+        GameObject card = CreateRoundedPanel("Card", backdrop.transform, Color.white, RubikUITheme.RadiusXl, addShadow: true);
         RectTransform rt = card.GetComponent<RectTransform>();
         rt.sizeDelta = new Vector2(440f, 230f);
 
-        TextMeshProUGUI title = CreateTMP("Title", card.transform, "Xác nhận đặt lại khối Rubik?", 24f, FontStyles.Bold, new Color32(0x0F, 0x17, 0x2A, 255), TextAlignmentOptions.Center);
+        TextMeshProUGUI title = CreateTMP("Title", card.transform, "Xác nhận đặt lại khối Rubik?", 24f, FontStyles.Bold, RubikUITheme.Slate900, TextAlignmentOptions.Center);
         RectTransform tRT = title.GetComponent<RectTransform>();
         tRT.anchorMin = new Vector2(0f, 1f);
         tRT.anchorMax = new Vector2(1f, 1f);
@@ -1986,7 +1989,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         tRT.sizeDelta = new Vector2(-40f, 40f);
         tRT.anchoredPosition = new Vector2(0f, -24f);
 
-        TextMeshProUGUI desc = CreateTMP("Desc", card.transform, "Tiến trình xoay hoặc thời gian hiện tại sẽ được đưa về trạng thái đã giải ban đầu.", 15f, FontStyles.Normal, new Color32(0x47, 0x55, 0x69, 255), TextAlignmentOptions.Center, wordWrapping: true);
+        TextMeshProUGUI desc = CreateTMP("Desc", card.transform, "Tiến trình xoay hoặc thời gian hiện tại sẽ được đưa về trạng thái đã giải ban đầu.", 15f, FontStyles.Normal, RubikUITheme.Slate600, TextAlignmentOptions.Center, wordWrapping: true);
         RectTransform dRT = desc.GetComponent<RectTransform>();
         dRT.anchorMin = new Vector2(0f, 0.5f);
         dRT.anchorMax = new Vector2(1f, 0.5f);
@@ -2008,8 +2011,8 @@ public static class RubikFriendlyPuzzleUIBuilder
         hlg.childForceExpandWidth = true;
         hlg.childForceExpandHeight = true;
 
-        uiCtrl.btnConfirmResetCancel = CreateSimplePillButton(row.transform, "BtnCancel", "Hủy", new Color32(0xE2, 0xE8, 0xF0, 255), new Color32(0x1E, 0x29, 0x3B, 255), 17f, hasBorder: false);
-        uiCtrl.btnConfirmResetYes = CreateSimplePillButton(row.transform, "BtnConfirm", "Đặt lại ngay", new Color32(0xEF, 0x44, 0x44, 255), Color.white, 17f, hasBorder: false);
+        uiCtrl.btnConfirmResetCancel = CreateSimplePillButton(row.transform, "BtnCancel", "Hủy", RubikUITheme.Slate200, RubikUITheme.Slate800, 17f, hasBorder: false);
+        uiCtrl.btnConfirmResetYes = CreateSimplePillButton(row.transform, "BtnConfirm", "Đặt lại ngay", RubikUITheme.DangerLight, Color.white, 17f, hasBorder: false);
         uiCtrl.confirmResetPanel = backdrop;
 
         backdrop.SetActive(false);
@@ -2023,13 +2026,13 @@ public static class RubikFriendlyPuzzleUIBuilder
         GameObject backdrop = CreateUIObject("SettingsModal", canvasTr);
         StretchFull(backdrop.GetComponent<RectTransform>());
         Image bg = backdrop.AddComponent<Image>();
-        bg.color = new Color(0.06f, 0.09f, 0.16f, 0.38f);
+        bg.color = RubikUITheme.Ink(RubikUITheme.ScrimLight);
 
-        GameObject card = CreateRoundedPanel("Card", backdrop.transform, Color.white, 24, addShadow: true);
+        GameObject card = CreateRoundedPanel("Card", backdrop.transform, Color.white, RubikUITheme.RadiusXl, addShadow: true);
         RectTransform rt = card.GetComponent<RectTransform>();
         rt.sizeDelta = new Vector2(520f, 410f);
 
-        TextMeshProUGUI title = CreateTMP("Title", card.transform, "CÀI ĐẶT ỨNG DỤNG", 24f, FontStyles.Bold, new Color32(0x0F, 0x17, 0x2A, 255), TextAlignmentOptions.Left);
+        TextMeshProUGUI title = CreateTMP("Title", card.transform, "CÀI ĐẶT ỨNG DỤNG", 24f, FontStyles.Bold, RubikUITheme.Slate900, TextAlignmentOptions.Left);
         RectTransform tRT = title.GetComponent<RectTransform>();
         tRT.anchorMin = new Vector2(0f, 1f);
         tRT.anchorMax = new Vector2(1f, 1f);
@@ -2065,8 +2068,8 @@ public static class RubikFriendlyPuzzleUIBuilder
         hlg.childForceExpandWidth = true;
         hlg.childForceExpandHeight = true;
 
-        uiCtrl.btnResetPB = CreateSimplePillButton(bottomRow.transform, "BtnResetPB", "Xóa kỷ lục (PB)", new Color32(0xFE, 0xE2, 0xE2, 255), new Color32(0xDC, 0x26, 0x26, 255), 16.5f, hasBorder: false);
-        uiCtrl.btnCloseSettings = CreateSimplePillButton(bottomRow.transform, "BtnCloseSettings", "Đóng", new Color32(0x25, 0x63, 0xEB, 255), Color.white, 17.5f, hasBorder: false);
+        uiCtrl.btnResetPB = CreateSimplePillButton(bottomRow.transform, "BtnResetPB", "Xóa kỷ lục (PB)", RubikUITheme.DangerBg, RubikUITheme.Danger, 16.5f, hasBorder: false);
+        uiCtrl.btnCloseSettings = CreateSimplePillButton(bottomRow.transform, "BtnCloseSettings", "Đóng", RubikUITheme.Blue600, Color.white, 17.5f, hasBorder: false);
         uiCtrl.settingsPanel = backdrop;
 
         backdrop.SetActive(false);
@@ -2085,7 +2088,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         rt.sizeDelta = new Vector2(-56f, 64f);
         rt.anchoredPosition = new Vector2(0f, yOffset);
 
-        TextMeshProUGUI lbl = CreateTMP("Label", row.transform, label, 15.5f, FontStyles.Normal, new Color32(0x33, 0x41, 0x55, 255), TextAlignmentOptions.Left);
+        TextMeshProUGUI lbl = CreateTMP("Label", row.transform, label, 15.5f, FontStyles.Normal, RubikUITheme.Slate700, TextAlignmentOptions.Left);
         RectTransform lRT = lbl.GetComponent<RectTransform>();
         lRT.anchorMin = new Vector2(0f, 1f);
         lRT.anchorMax = new Vector2(0.75f, 1f);
@@ -2093,7 +2096,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         lRT.sizeDelta = new Vector2(0f, 26f);
         lRT.anchoredPosition = Vector2.zero;
 
-        valueText = CreateTMP("Val", row.transform, $"{defaultVal:F2}", 15.5f, FontStyles.Bold, new Color32(0x25, 0x63, 0xEB, 255), TextAlignmentOptions.Right);
+        valueText = CreateTMP("Val", row.transform, $"{defaultVal:F2}", 15.5f, FontStyles.Bold, RubikUITheme.Blue600, TextAlignmentOptions.Right);
         RectTransform vRT = valueText.GetComponent<RectTransform>();
         vRT.anchorMin = new Vector2(0.75f, 1f);
         vRT.anchorMax = new Vector2(1f, 1f);
@@ -2118,13 +2121,13 @@ public static class RubikFriendlyPuzzleUIBuilder
         GameObject backdrop = CreateUIObject("VictoryPanel", canvasTr);
         StretchFull(backdrop.GetComponent<RectTransform>());
         Image bg = backdrop.AddComponent<Image>();
-        bg.color = new Color(0.06f, 0.09f, 0.16f, 0.42f);
+        bg.color = RubikUITheme.Ink(RubikUITheme.ScrimStrong);
 
-        GameObject card = CreateRoundedPanel("Card", backdrop.transform, Color.white, 24, addShadow: true);
+        GameObject card = CreateRoundedPanel("Card", backdrop.transform, Color.white, RubikUITheme.RadiusXl, addShadow: true);
         RectTransform rt = card.GetComponent<RectTransform>();
         rt.sizeDelta = new Vector2(460f, 290f);
 
-        TextMeshProUGUI title = CreateTMP("Title", card.transform, "HOÀN THÀNH XUẤT SẮC!", 24f, FontStyles.Bold, new Color32(0x16, 0xA3, 0x4A, 255), TextAlignmentOptions.Center);
+        TextMeshProUGUI title = CreateTMP("Title", card.transform, "HOÀN THÀNH XUẤT SẮC!", 24f, FontStyles.Bold, RubikUITheme.Success, TextAlignmentOptions.Center);
         RectTransform tRT = title.GetComponent<RectTransform>();
         tRT.anchorMin = new Vector2(0f, 1f);
         tRT.anchorMax = new Vector2(1f, 1f);
@@ -2132,17 +2135,17 @@ public static class RubikFriendlyPuzzleUIBuilder
         tRT.sizeDelta = new Vector2(-32f, 44f);
         tRT.anchoredPosition = new Vector2(0f, -26f);
 
-        uiCtrl.victoryTimeText = CreateTMP("VictoryTimeText", card.transform, "Thời gian: <b>00:00.000</b>", 18.5f, FontStyles.Normal, new Color32(0x0F, 0x17, 0x2A, 255), TextAlignmentOptions.Center);
+        uiCtrl.victoryTimeText = CreateTMP("VictoryTimeText", card.transform, "Thời gian: <b>00:00.000</b>", 18.5f, FontStyles.Normal, RubikUITheme.Slate900, TextAlignmentOptions.Center);
         RectTransform vtRT = uiCtrl.victoryTimeText.GetComponent<RectTransform>();
         vtRT.sizeDelta = new Vector2(380f, 36f);
         vtRT.anchoredPosition = new Vector2(0f, 24f);
 
-        uiCtrl.victoryMovesText = CreateTMP("VictoryMovesText", card.transform, "Số nước đi: <b>0</b>", 17.5f, FontStyles.Normal, new Color32(0x47, 0x55, 0x69, 255), TextAlignmentOptions.Center);
+        uiCtrl.victoryMovesText = CreateTMP("VictoryMovesText", card.transform, "Số nước đi: <b>0</b>", 17.5f, FontStyles.Normal, RubikUITheme.Slate600, TextAlignmentOptions.Center);
         RectTransform vmRT = uiCtrl.victoryMovesText.GetComponent<RectTransform>();
         vmRT.sizeDelta = new Vector2(380f, 34f);
         vmRT.anchoredPosition = new Vector2(0f, -16f);
 
-        uiCtrl.btnPlayAgain = CreateSimplePillButton(card.transform, "BtnPlayAgain", "Chơi ván mới", new Color32(0x22, 0xC5, 0x5E, 255), Color.white, 19f, hasBorder: false);
+        uiCtrl.btnPlayAgain = CreateSimplePillButton(card.transform, "BtnPlayAgain", "Chơi ván mới", RubikUITheme.SuccessLight, Color.white, 19f, hasBorder: false);
         RectTransform paRT = uiCtrl.btnPlayAgain.GetComponent<RectTransform>();
         paRT.anchorMin = new Vector2(0.5f, 0f);
         paRT.anchorMax = new Vector2(0.5f, 0f);
@@ -2166,9 +2169,9 @@ public static class RubikFriendlyPuzzleUIBuilder
         GameObject backdrop = CreateUIObject("SolverLoadingModal", canvasTr);
         StretchFull(backdrop.GetComponent<RectTransform>());
         Image bg = backdrop.AddComponent<Image>();
-        bg.color = new Color(0.06f, 0.09f, 0.16f, 0.40f);
+        bg.color = RubikUITheme.Ink(0.40f);
 
-        GameObject card = CreateRoundedPanel("Card", backdrop.transform, Color.white, 24, addShadow: true);
+        GameObject card = CreateRoundedPanel("Card", backdrop.transform, Color.white, RubikUITheme.RadiusXl, addShadow: true);
         RectTransform rt = card.GetComponent<RectTransform>();
         rt.sizeDelta = new Vector2(460f, 215f);
 
@@ -2182,7 +2185,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         sbRT.anchoredPosition = new Vector2(0f, -24f);
         Image sbImg = spinnerBadge.AddComponent<Image>();
         sbImg.sprite = RubikUISpriteFactory.GetCircleSprite();
-        sbImg.color = new Color32(0xDB, 0xEA, 0xFE, 255);
+        sbImg.color = RubikUITheme.Blue100;
         sbImg.raycastTarget = false;
 
         GameObject spinnerObj = CreateUIObject("LoadingSpinner", spinnerBadge.transform);
@@ -2191,12 +2194,12 @@ public static class RubikFriendlyPuzzleUIBuilder
         spRT.anchoredPosition = Vector2.zero;
         Image spImg = spinnerObj.AddComponent<Image>();
         spImg.sprite = RubikUISpriteFactory.GetIcon(RubikUISpriteFactory.IconType.Reset);
-        spImg.color = new Color32(0x25, 0x63, 0xEB, 255);
+        spImg.color = RubikUITheme.Blue600;
         spImg.raycastTarget = false;
 
         TextMeshProUGUI titleTMP = CreateTMP("LoadingTitleText", card.transform,
             "Đang tìm hướng giải ngắn nhất...",
-            20.5f, FontStyles.Bold, new Color32(0x0F, 0x17, 0x2A, 255), TextAlignmentOptions.Center);
+            20.5f, FontStyles.Bold, RubikUITheme.Slate900, TextAlignmentOptions.Center);
         RectTransform tRT = titleTMP.GetComponent<RectTransform>();
         tRT.anchorMin = new Vector2(0f, 0f);
         tRT.anchorMax = new Vector2(1f, 0f);
@@ -2206,7 +2209,7 @@ public static class RubikFriendlyPuzzleUIBuilder
 
         TextMeshProUGUI subTMP = CreateTMP("LoadingSubText", card.transform,
             "Đang phân tích 54 ô màu bằng thuật toán Kociemba 2-Phase",
-            14f, FontStyles.Normal, new Color32(0x64, 0x74, 0x8B, 255), TextAlignmentOptions.Center, wordWrapping: true);
+            14f, FontStyles.Normal, RubikUITheme.Slate500, TextAlignmentOptions.Center, wordWrapping: true);
         RectTransform sRT = subTMP.GetComponent<RectTransform>();
         sRT.anchorMin = new Vector2(0f, 0f);
         sRT.anchorMax = new Vector2(1f, 0f);
@@ -2250,7 +2253,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         if (addShadow)
         {
             Shadow sh = obj.AddComponent<Shadow>();
-            sh.effectColor = new Color(0.06f, 0.09f, 0.16f, 0.09f);
+            sh.effectColor = RubikUITheme.Ink(RubikUITheme.ShadowCard);
             sh.effectDistance = new Vector2(0f, -4f);
         }
 
@@ -2297,7 +2300,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         Slider slider = sliderObj.AddComponent<Slider>();
 
         // Track nền xám nhạt
-        GameObject bgObj = CreateRoundedPanel("Background", sliderObj.transform, new Color32(0xE2, 0xE8, 0xF0, 255), 6, addShadow: false);
+        GameObject bgObj = CreateRoundedPanel("Background", sliderObj.transform, RubikUITheme.Slate200, 6, addShadow: false);
         RectTransform bgRT = bgObj.GetComponent<RectTransform>();
         bgRT.anchorMin = new Vector2(0f, 0.5f);
         bgRT.anchorMax = new Vector2(1f, 0.5f);
@@ -2310,7 +2313,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         faRT.anchorMax = new Vector2(1f, 0.5f);
         faRT.sizeDelta = new Vector2(-10f, 8f);
 
-        GameObject fill = CreateRoundedPanel("Fill", fillArea.transform, new Color32(0x3B, 0x82, 0xF6, 255), 6, addShadow: false);
+        GameObject fill = CreateRoundedPanel("Fill", fillArea.transform, RubikUITheme.Blue500, 6, addShadow: false);
         RectTransform fRT = fill.GetComponent<RectTransform>();
         fRT.sizeDelta = new Vector2(10f, 8f);
 
@@ -2330,7 +2333,7 @@ public static class RubikFriendlyPuzzleUIBuilder
         hImg.color = Color.white;
 
         Shadow hShadow = handle.AddComponent<Shadow>();
-        hShadow.effectColor = new Color(0.06f, 0.09f, 0.16f, 0.22f);
+        hShadow.effectColor = RubikUITheme.Ink(RubikUITheme.ShadowHandle);
         hShadow.effectDistance = new Vector2(0f, -2f);
 
         slider.fillRect = fRT;

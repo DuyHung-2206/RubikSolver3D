@@ -189,12 +189,12 @@ public static class RubikUISpriteFactory
         Vector2 pTopLeft = center + new Vector2(-R * cos30, R * sin30);
         Vector2 pBottomLeft = center + new Vector2(-R * cos30, -R * sin30);
 
-        Color colTop = new Color32(0xFA, 0xCC, 0x15, 255);   // Vàng tươi
-        Color colLeft = new Color32(0x22, 0xC5, 0x5E, 255);  // Xanh lá
-        Color colRight = new Color32(0xEF, 0x44, 0x44, 255); // Đỏ cam
+        Color colTop = RubikUITheme.Yellow;   // Vàng tươi
+        Color colLeft = RubikUITheme.SuccessLight;  // Xanh lá
+        Color colRight = RubikUITheme.DangerLight; // Đỏ cam
         Color colAltTop = new Color32(0xFB, 0x92, 0x3C, 255);
-        Color colAltLeft = new Color32(0x3B, 0x82, 0xF6, 255);
-        Color colDark = new Color32(0x1E, 0x29, 0x3B, 255);
+        Color colAltLeft = RubikUITheme.Blue500;
+        Color colDark = RubikUITheme.Slate800;
 
         // Vẽ 3 mặt hình thoi của khối lập phương Isometric
         FillQuadWithGrid(pixels, size, pCenter, pTopLeft, pTop, pTopRight, colTop, colAltTop, colDark);

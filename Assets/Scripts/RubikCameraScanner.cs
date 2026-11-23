@@ -201,7 +201,7 @@ public class RubikCameraScanner : MonoBehaviour
         if (sliderDistance != null)
         {
             sliderDistance.minValue = 36f;
-            sliderDistance.maxValue = 88f;
+            sliderDistance.maxValue = 110f;
             sliderDistance.SetValueWithoutNotify(reticleSpread);
             sliderDistance.onValueChanged.RemoveListener(OnDistanceSliderChanged);
             sliderDistance.onValueChanged.AddListener(OnDistanceSliderChanged);
@@ -335,8 +335,8 @@ public class RubikCameraScanner : MonoBehaviour
 
     public void SetReticleSpread(float spread)
     {
-        reticleSpread = Mathf.Clamp(spread, 36f, 88f);
-        reticleBoxSize = Mathf.Clamp(reticleSpread * 0.82f, 30f, 66f);
+        reticleSpread = Mathf.Clamp(spread, 36f, 110f);
+        reticleBoxSize = Mathf.Clamp(reticleSpread * 0.82f, 30f, 78f);
         ApplyReticleLayout();
 
         if (sliderDistance != null && Mathf.Abs(sliderDistance.value - reticleSpread) > 0.5f)
@@ -409,6 +409,9 @@ public class RubikCameraScanner : MonoBehaviour
     {
         if (cameraFeedImage == null) return;
 
+        int videoRotation = (webCamTexture != null) ? webCamTexture.videoRotationAngle : 0;
+        cameraFeedImage.rectTransform.localEulerAngles = new Vector3(0f, 0f, -videoRotation);
+
         bool vMirror = flipVertical;
         if (webCamTexture != null && webCamTexture.videoVerticallyMirrored)
         {
@@ -434,12 +437,12 @@ public class RubikCameraScanner : MonoBehaviour
             if (txt != null)
             {
                 txt.text = flipHorizontal ? "Gương: BẬT" : "Gương: TẮT";
-                txt.color = flipHorizontal ? Color.white : new Color32(0x33, 0x41, 0x55, 255);
+                txt.color = flipHorizontal ? Color.white : RubikUITheme.Slate700;
             }
             var img = btnFlipHorizontal.GetComponent<Image>();
             if (img != null)
             {
-                img.color = flipHorizontal ? new Color32(0x10, 0xB9, 0x81, 255) : new Color32(0xE2, 0xE8, 0xF0, 255);
+                img.color = flipHorizontal ? new Color32(0x10, 0xB9, 0x81, 255) : RubikUITheme.Slate200;
             }
         }
 
@@ -449,12 +452,12 @@ public class RubikCameraScanner : MonoBehaviour
             if (txt != null)
             {
                 txt.text = flipVertical ? "Dọc: LẬT" : "Dọc: CHUẨN";
-                txt.color = flipVertical ? Color.white : new Color32(0x33, 0x41, 0x55, 255);
+                txt.color = flipVertical ? Color.white : RubikUITheme.Slate700;
             }
             var img = btnFlipVertical.GetComponent<Image>();
             if (img != null)
             {
-                img.color = flipVertical ? new Color32(0xF5, 0x9E, 0x0B, 255) : new Color32(0xE2, 0xE8, 0xF0, 255);
+                img.color = flipVertical ? new Color32(0xF5, 0x9E, 0x0B, 255) : RubikUITheme.Slate200;
             }
         }
     }
@@ -512,11 +515,21 @@ public class RubikCameraScanner : MonoBehaviour
         StopCamera();
         if (scannerPanel != null)
             scannerPanel.SetActive(false);
+
+        RubikUIController ui = FindAnyObjectByType<RubikUIController>();
+        if (ui != null) ui.OnModalClosed();
     }
 
     private void StartCamera()
     {
         StopCamera();
+
+#if UNITY_ANDROID
+        if (!UnityEngine.Android.Permission.HasUserAuthorizedPermission(UnityEngine.Android.Permission.Camera))
+        {
+            UnityEngine.Android.Permission.RequestUserPermission(UnityEngine.Android.Permission.Camera);
+        }
+#endif
 
         WebCamDevice[] devices = WebCamTexture.devices;
         if (devices == null || devices.Length == 0)
@@ -529,12 +542,28 @@ public class RubikCameraScanner : MonoBehaviour
         }
 
         isSimulatingCamera = false;
+
+        // Ưu tiên chọn Rear Camera (Camera sau) trên điện thoại ở lần mở camera đầu tiên
+        if (currentDeviceIndex == 0 && devices.Length > 1)
+        {
+            for (int i = 0; i < devices.Length; i++)
+            {
+                if (!devices[i].isFrontFacing)
+                {
+                    currentDeviceIndex = i;
+                    flipHorizontal = false; // Camera sau không dùng lật gương
+                    break;
+                }
+            }
+        }
+
         if (currentDeviceIndex >= devices.Length) currentDeviceIndex = 0;
 
         string deviceName = devices[currentDeviceIndex].name;
+        bool isFront = devices[currentDeviceIndex].isFrontFacing;
         if (cameraInfoText != null)
         {
-            cameraInfoText.text = $"Camera: {deviceName} ({currentDeviceIndex + 1}/{devices.Length})";
+            cameraInfoText.text = $"Camera: {(isFront ? "Trước" : "Sau")} - {deviceName} ({currentDeviceIndex + 1}/{devices.Length})";
         }
 
         // Khởi tạo luồng WebCamTexture độ phân giải 640x480 tốc độ 30 FPS
@@ -570,6 +599,7 @@ public class RubikCameraScanner : MonoBehaviour
         }
 
         currentDeviceIndex = (currentDeviceIndex + 1) % devices.Length;
+        flipHorizontal = devices[currentDeviceIndex].isFrontFacing;
         StartCamera();
     }
 
@@ -639,15 +669,35 @@ public class RubikCameraScanner : MonoBehaviour
                 screenV = 0.5f + ((1 - r) * 88f / feedSize.y);
             }
 
-            // Ánh xạ tọa độ màn hình sang tọa độ pixel texture tương ứng với uvRect
-            float texU = flipHorizontal ? (1.0f - screenU) : screenU;
+            // Ánh xạ tọa độ màn hình sang tọa độ pixel texture tương ứng với uvRect và góc xoay cảm biến camera điện thoại
+            float mappedU = screenU;
+            float mappedV = screenV;
+
+            int rot = (webCamTexture != null) ? webCamTexture.videoRotationAngle : 0;
+            if (rot == 90)
+            {
+                mappedU = 1.0f - screenV;
+                mappedV = screenU;
+            }
+            else if (rot == 180)
+            {
+                mappedU = 1.0f - screenU;
+                mappedV = 1.0f - screenV;
+            }
+            else if (rot == 270)
+            {
+                mappedU = screenV;
+                mappedV = 1.0f - screenU;
+            }
+
+            float texU = flipHorizontal ? (1.0f - mappedU) : mappedU;
 
             bool vMirror = flipVertical;
             if (webCamTexture != null && webCamTexture.videoVerticallyMirrored)
             {
                 vMirror = !vMirror;
             }
-            float texV = vMirror ? (1.0f - screenV) : screenV;
+            float texV = vMirror ? (1.0f - mappedV) : mappedV;
 
             int px = Mathf.Clamp(Mathf.RoundToInt(texU * texWidth), 10, texWidth - 11);
             int py = Mathf.Clamp(Mathf.RoundToInt(texV * texHeight), 10, texHeight - 11);
@@ -1053,18 +1103,18 @@ public class RubikCameraScanner : MonoBehaviour
 
             if (done)
             {
-                faceBadgeImages[i].color = new Color32(0x16, 0xA3, 0x4A, 255); // Xanh lá đã quét xong
+                faceBadgeImages[i].color = RubikUITheme.Success; // Xanh lá đã quét xong
                 if (badgeTxt != null) badgeTxt.color = Color.white;
             }
             else if (isCurrent)
             {
-                faceBadgeImages[i].color = new Color32(0x25, 0x63, 0xEB, 255); // Xanh dương đang quét
+                faceBadgeImages[i].color = RubikUITheme.Blue600; // Xanh dương đang quét
                 if (badgeTxt != null) badgeTxt.color = Color.white;
             }
             else
             {
-                faceBadgeImages[i].color = new Color32(0xE2, 0xE8, 0xF0, 255); // Xám sáng chưa quét
-                if (badgeTxt != null) badgeTxt.color = new Color32(0x47, 0x55, 0x69, 255);
+                faceBadgeImages[i].color = RubikUITheme.Slate200; // Xám sáng chưa quét
+                if (badgeTxt != null) badgeTxt.color = RubikUITheme.Slate600;
             }
         }
     }
@@ -1329,12 +1379,12 @@ public class RubikCameraScanner : MonoBehaviour
             Image img = cell.GetComponent<Image>();
             if (img != null)
             {
-                img.sprite = RubikUISpriteFactory.GetRoundedSprite(8);
+                img.sprite = RubikUISpriteFactory.GetRoundedSprite(RubikUITheme.RadiusXs);
                 img.type = Image.Type.Sliced;
             }
             Outline outline = cell.GetComponent<Outline>();
             if (outline == null) outline = cell.gameObject.AddComponent<Outline>();
-            outline.effectColor = new Color(0.06f, 0.09f, 0.16f, 0.16f);
+            outline.effectColor = RubikUITheme.Ink(0.16f);
             outline.effectDistance = new Vector2(1.5f, -1.5f);
 
             previewCellImages[i] = img;
@@ -1362,7 +1412,7 @@ public class RubikCameraScanner : MonoBehaviour
                 reticleCellBorders[i] = box.GetComponent<Image>();
                 if (reticleCellBorders[i] != null && reticleCellBorders[i].sprite == null)
                 {
-                    reticleCellBorders[i].sprite = RubikUISpriteFactory.GetRoundedSprite(10, 4);
+                    reticleCellBorders[i].sprite = RubikUISpriteFactory.GetRoundedSprite(RubikUITheme.RadiusSm, 4);
                     reticleCellBorders[i].type = Image.Type.Sliced;
                 }
                 reticleLabels[i] = box.GetComponentInChildren<TextMeshProUGUI>(true);
@@ -1630,15 +1680,15 @@ public class RubikCameraScanner : MonoBehaviour
 
             // Chuẩn hóa màu chữ có độ tương phản cao trên nền sáng chuẩn Friendly Puzzle
             if (col == Color.green)
-                statusText.color = new Color32(0x16, 0xA3, 0x4A, 255); // Xanh lá đậm #16A34A
+                statusText.color = RubikUITheme.Success; // Xanh lá đậm #16A34A
             else if (col == Color.red)
-                statusText.color = new Color32(0xDC, 0x26, 0x26, 255); // Đỏ đậm #DC2626
+                statusText.color = RubikUITheme.Danger; // Đỏ đậm #DC2626
             else if (col == Color.yellow)
-                statusText.color = new Color32(0xD9, 0x77, 0x06, 255); // Cam hổ phách #D97706
+                statusText.color = RubikUITheme.Warning; // Cam hổ phách #D97706
             else if (col == Color.cyan || col == Color.white)
-                statusText.color = new Color32(0x02, 0x84, 0xC7, 255); // Xanh dương #0284C7
+                statusText.color = RubikUITheme.Sky600; // Xanh dương #0284C7
             else if (col == Color.gray)
-                statusText.color = new Color32(0x64, 0x74, 0x8B, 255); // Xám Slate #64748B
+                statusText.color = RubikUITheme.Slate500; // Xám Slate #64748B
             else
                 statusText.color = col;
         }

@@ -117,6 +117,9 @@ public class RubikNetColorPicker : MonoBehaviour
     {
         if (netPanel != null)
             netPanel.SetActive(false);
+
+        RubikUIController ui = FindAnyObjectByType<RubikUIController>();
+        if (ui != null) ui.OnModalClosed();
     }
 
     public void TogglePanel()
@@ -270,8 +273,8 @@ public class RubikNetColorPicker : MonoBehaviour
         Outline outline = btn.GetComponent<Outline>();
         if (outline == null) outline = btn.gameObject.AddComponent<Outline>();
         outline.effectColor = active
-            ? new Color32(0x1E, 0x29, 0x3B, 255)
-            : new Color(0.06f, 0.09f, 0.16f, 0.14f);
+            ? RubikUITheme.Slate800
+            : RubikUITheme.Ink(0.14f);
         outline.effectDistance = active ? new Vector2(3f, -3f) : new Vector2(1.5f, -1.5f);
         outline.enabled = true;
 
@@ -330,9 +333,9 @@ public class RubikNetColorPicker : MonoBehaviour
             rt.sizeDelta = new Vector2(104f, 104f);
 
             Image faceBg = faceObj.GetComponent<Image>();
-            faceBg.sprite = RubikUISpriteFactory.GetRoundedSprite(10);
+            faceBg.sprite = RubikUISpriteFactory.GetRoundedSprite(RubikUITheme.RadiusSm);
             faceBg.type = Image.Type.Sliced;
-            faceBg.color = new Color32(0x1E, 0x29, 0x3B, 255); // Khung nhựa đen xám bo góc của Rubik
+            faceBg.color = RubikUITheme.Slate800; // Khung nhựa đen xám bo góc của Rubik
 
             GridLayoutGroup grid = faceObj.AddComponent<GridLayoutGroup>();
             grid.padding = new RectOffset(5, 5, 5, 5);
@@ -601,13 +604,13 @@ public class RubikNetColorPicker : MonoBehaviour
             statusText.text = msg;
 
             if (col == Color.green)
-                statusText.color = new Color32(0x16, 0xA3, 0x4A, 255); // Xanh lá đậm #16A34A
+                statusText.color = RubikUITheme.Success; // Xanh lá đậm #16A34A
             else if (col == Color.red)
-                statusText.color = new Color32(0xDC, 0x26, 0x26, 255); // Đỏ đậm #DC2626
+                statusText.color = RubikUITheme.Danger; // Đỏ đậm #DC2626
             else if (col == Color.yellow)
-                statusText.color = new Color32(0xD9, 0x77, 0x06, 255); // Cam hổ phách #D97706
+                statusText.color = RubikUITheme.Warning; // Cam hổ phách #D97706
             else if (col == Color.cyan || col == Color.white)
-                statusText.color = new Color32(0x02, 0x84, 0xC7, 255); // Xanh dương #0284C7
+                statusText.color = RubikUITheme.Sky600; // Xanh dương #0284C7
             else
                 statusText.color = col;
         }

@@ -129,13 +129,19 @@ public class Rubik3DArrowIndicator : MonoBehaviour
 
     private Material CreateNeonMaterial(Color color, float intensity)
     {
-        // Thử tìm shader Unlit URP hoặc Fallback sang Unlit/Color / Standard
-        Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
-        if (shader == null) shader = Shader.Find("Unlit/Color");
-        if (shader == null) shader = Shader.Find("Universal Render Pipeline/Lit");
-        if (shader == null) shader = Shader.Find("Standard");
+        Shader shader = RubikGenerator.GetSafeShader(preferUnlit: true);
+        Material mat = null;
+        if (shader != null)
+        {
+            try { mat = new Material(shader); } catch { }
+        }
 
-        Material mat = new Material(shader);
+        if (mat == null)
+        {
+            Shader s = Shader.Find("Sprites/Default") ?? Shader.Find("UI/Default");
+            mat = new Material(s);
+        }
+
         mat.name = "Procedural3DArrowMaterial";
 
         Color emissiveColor = color * intensity;
